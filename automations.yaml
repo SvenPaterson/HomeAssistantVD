@@ -1,0 +1,71 @@
+- id: '1657894966012'
+  alias: SubWoof to ON when Marantz to ON
+  description: Power On SubWoofer When Marantz Turns On
+  trigger:
+  - platform: device
+    device_id: 2cb05ea25c946bf67aaab462a36a5ba2
+    domain: media_player
+    entity_id: media_player.marantz_sr5011
+    type: turned_on
+  condition: []
+  action:
+  - type: turn_on
+    device_id: 86db6e60ff14c3daf2aa2ee9113f7d34
+    entity_id: switch.h103_subwoof
+    domain: switch
+  mode: single
+- id: '1657895040432'
+  alias: SubWoof to OFF when Marantz to OFF
+  description: Turn off Sub Woofer when Marantz is turned off.
+  trigger:
+  - platform: device
+    device_id: 2cb05ea25c946bf67aaab462a36a5ba2
+    domain: media_player
+    entity_id: media_player.marantz_sr5011
+    type: turned_off
+  condition: []
+  action:
+  - type: turn_off
+    device_id: 86db6e60ff14c3daf2aa2ee9113f7d34
+    entity_id: switch.h103_subwoof
+    domain: switch
+  mode: single
+- id: '1658353178227'
+  alias: SubWoof Post Power-Restore State
+  description: ''
+  trigger:
+  - platform: time
+    at: 01:00:00
+  condition: []
+  action:
+  - type: turn_off
+    device_id: 86db6e60ff14c3daf2aa2ee9113f7d34
+    entity_id: switch.h103_subwoof
+    domain: switch
+  mode: single
+- id: '1658793243219'
+  alias: Set SimpliSafe at Night
+  description: Arm SimpliSafe alarm to Home mode if either Lindsay or Stephen Device
+    presence detected
+  trigger:
+  - platform: time
+    at: '23:00:00'
+  condition:
+  - condition: or
+    conditions:
+    - condition: device
+      device_id: 73c12d1fa67caf9f2d89703a48ec3625
+      domain: device_tracker
+      entity_id: device_tracker.amos_iphone
+      type: is_home
+    - condition: device
+      device_id: 52e6447a2cde2fcd56002fa96e122777
+      domain: device_tracker
+      entity_id: device_tracker.lindsays_iphone
+      type: is_home
+  action:
+  - device_id: 65a8e8d2ed76c3e82bdf91ea161c5628
+    domain: alarm_control_panel
+    entity_id: alarm_control_panel.4216_victoria_dr_alarm_control_panel_alarm_control_panel
+    type: arm_home
+  mode: single
