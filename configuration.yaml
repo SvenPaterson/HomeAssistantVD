@@ -9,3 +9,8 @@ tts:
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
+
+# MariaDB
+recorder:
+  db_url: !secret mariadb_url
+history:
