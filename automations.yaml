@@ -69,3 +69,75 @@
     entity_id: alarm_control_panel.4216_victoria_dr_alarm_control_panel_alarm_control_panel
     type: arm_home
   mode: single
+- id: '1660311628291'
+  alias: Turn On Basement Dehumidifier
+  description: ''
+  trigger:
+  - type: humidity
+    platform: device
+    device_id: 8feae7912843cad0780c7691a617e2d9
+    entity_id: sensor.weather_station_humidity
+    domain: sensor
+    above: 40
+  condition:
+  - condition: device
+    type: is_off
+    device_id: 8025240608bcc6181c8bd2873929eee9
+    entity_id: switch.tasmota
+    domain: switch
+  action:
+  - type: turn_on
+    device_id: 8025240608bcc6181c8bd2873929eee9
+    entity_id: switch.tasmota
+    domain: switch
+  mode: single
+- id: '1660312423988'
+  alias: Turn Off Basement Dehumidifier
+  description: ''
+  trigger:
+  - type: humidity
+    platform: device
+    device_id: 8feae7912843cad0780c7691a617e2d9
+    entity_id: sensor.weather_station_humidity
+    domain: sensor
+    below: 40
+  condition:
+  - condition: device
+    type: is_on
+    device_id: 8025240608bcc6181c8bd2873929eee9
+    entity_id: switch.tasmota
+    domain: switch
+  action:
+  - type: turn_off
+    device_id: 8025240608bcc6181c8bd2873929eee9
+    entity_id: switch.tasmota
+    domain: switch
+  mode: single
+- id: '1661019086429'
+  alias: Mushroom Grow Light Schedule On
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunrise
+    offset: 0
+  condition: []
+  action:
+  - type: turn_on
+    device_id: 74db76f01d47eb0d5ee0172843cef94b
+    entity_id: switch.shellyplugus_083af20077a4_switch_0
+    domain: switch
+  mode: single
+- id: '1661019131309'
+  alias: Mushroom Grow Light Schedule Off
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunset
+    offset: 0
+  condition: []
+  action:
+  - type: turn_off
+    device_id: 74db76f01d47eb0d5ee0172843cef94b
+    entity_id: switch.shellyplugus_083af20077a4_switch_0
+    domain: switch
+  mode: single
