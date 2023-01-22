@@ -69,50 +69,6 @@
     entity_id: alarm_control_panel.4216_victoria_dr_alarm_control_panel_alarm_control_panel
     type: arm_home
   mode: single
-- id: '1660311628291'
-  alias: Turn On Basement Dehumidifier
-  description: ''
-  trigger:
-  - type: humidity
-    platform: device
-    device_id: 8feae7912843cad0780c7691a617e2d9
-    entity_id: sensor.weather_station_humidity
-    domain: sensor
-    above: 40
-  condition:
-  - condition: device
-    type: is_off
-    device_id: 8025240608bcc6181c8bd2873929eee9
-    entity_id: switch.tasmota
-    domain: switch
-  action:
-  - type: turn_on
-    device_id: 8025240608bcc6181c8bd2873929eee9
-    entity_id: switch.tasmota
-    domain: switch
-  mode: single
-- id: '1660312423988'
-  alias: Turn Off Basement Dehumidifier
-  description: ''
-  trigger:
-  - type: humidity
-    platform: device
-    device_id: 8feae7912843cad0780c7691a617e2d9
-    entity_id: sensor.weather_station_humidity
-    domain: sensor
-    below: 40
-  condition:
-  - condition: device
-    type: is_on
-    device_id: 8025240608bcc6181c8bd2873929eee9
-    entity_id: switch.tasmota
-    domain: switch
-  action:
-  - type: turn_off
-    device_id: 8025240608bcc6181c8bd2873929eee9
-    entity_id: switch.tasmota
-    domain: switch
-  mode: single
 - id: '1661019086429'
   alias: Mushroom Grow Light Schedule On
   description: ''
@@ -139,5 +95,221 @@
   - type: turn_off
     device_id: 74db76f01d47eb0d5ee0172843cef94b
     entity_id: switch.shellyplugus_083af20077a4_switch_0
+    domain: switch
+  mode: single
+- id: '1661712457366'
+  alias: Outdoor Lights Off Schedule
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunrise
+    offset: 00:30
+  condition: []
+  action:
+  - type: turn_off
+    device_id: 2c08e34bae34dc323d643e118ed164ab
+    entity_id: switch.porch_lights
+    domain: switch
+  - type: turn_off
+    device_id: cbc2b47b4b49d61ad30b3e017bc9d28f
+    entity_id: switch.driveway_light
+    domain: switch
+  mode: single
+- id: '1661712592041'
+  alias: Outdoor Lights On Schedule
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunset
+    offset: -00:30
+  condition: []
+  action:
+  - type: turn_on
+    device_id: 2c08e34bae34dc323d643e118ed164ab
+    entity_id: switch.porch_lights
+    domain: switch
+  - type: turn_on
+    device_id: cbc2b47b4b49d61ad30b3e017bc9d28f
+    entity_id: switch.driveway_light
+    domain: switch
+  mode: single
+- id: '1673286198027'
+  alias: Turn Off DeHu if Basement Dry
+  description: ''
+  trigger:
+  - type: humidity
+    platform: device
+    device_id: 098e716c72ce23dc1b3b9c034c10396a
+    entity_id: sensor.basement_thermohygrometer_humidity
+    domain: sensor
+    below: 40
+  condition:
+  - condition: device
+    type: is_on
+    device_id: 8025240608bcc6181c8bd2873929eee9
+    entity_id: switch.tasmota
+    domain: switch
+  action:
+  - type: turn_off
+    device_id: 8025240608bcc6181c8bd2873929eee9
+    entity_id: switch.tasmota
+    domain: switch
+  mode: single
+- id: '1673286341891'
+  alias: Turn On DeHu if Basement Damp
+  description: ''
+  trigger:
+  - type: humidity
+    platform: device
+    device_id: 098e716c72ce23dc1b3b9c034c10396a
+    entity_id: sensor.basement_thermohygrometer_humidity
+    domain: sensor
+    above: 45
+  condition:
+  - condition: device
+    type: is_off
+    device_id: 8025240608bcc6181c8bd2873929eee9
+    entity_id: switch.tasmota
+    domain: switch
+  action:
+  - type: turn_on
+    device_id: 8025240608bcc6181c8bd2873929eee9
+    entity_id: switch.tasmota
+    domain: switch
+  mode: single
+- id: '1673286578742'
+  alias: ThermoHygrometer Low Battery Warning
+  description: ''
+  trigger:
+  - platform: time
+    at: '17:00:00'
+  condition:
+  - condition: or
+    conditions:
+    - type: is_battery_level
+      condition: device
+      device_id: 1cb3e02eb08292e277f6b2997f995485
+      entity_id: sensor.guest_room_thermohygrometer_battery
+      domain: sensor
+      below: 10
+    - type: is_battery_level
+      condition: device
+      device_id: 1cb3e02eb08292e277f6b2997f995485
+      entity_id: sensor.guest_room_thermohygrometer_battery
+      domain: sensor
+      below: 10
+  action:
+  - service: notify.mobile_app_amos_iphone
+    data:
+      message: Govee ThermoHygrometer Battery is below 10%. Replace batteries soon!
+      title: Low Battery Warning
+  mode: single
+- id: '1673891966542'
+  alias: Ping TV
+  description: ''
+  trigger:
+  - platform: device
+    device_id: 0351bd840216c9f2a38a2e9490dbc19e
+    domain: media_player
+    entity_id: media_player.family_room_lgtv
+    type: turned_on
+  condition: []
+  action:
+  - service: notify.family_room_lgtv
+    data:
+      message: I love you!
+  mode: single
+- id: '1674314800351'
+  alias: Washing Machine Status
+  description: Logic to determine current status of washing machine based on power
+    output of device
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.s31_3_washing_machine_energy_power
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
+    id: 'Off'
+    below: 3
+  - platform: numeric_state
+    entity_id: sensor.s31_3_washing_machine_energy_power
+    for:
+      hours: 0
+      minutes: 30
+      seconds: 0
+    id: Idling
+    below: 10
+    above: 3
+  - platform: numeric_state
+    entity_id: sensor.s31_3_washing_machine_energy_power
+    id: Running
+    above: 10
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: 'Off'
+      sequence:
+      - service: input_select.select_option
+        data:
+          option: 'Off'
+        target:
+          entity_id: input_select.washing_machine_status
+    - conditions:
+      - condition: trigger
+        id: Idling
+      sequence:
+      - service: input_select.select_option
+        data:
+          option: Idling
+        target:
+          entity_id: input_select.washing_machine_status
+    - conditions:
+      - condition: trigger
+        id: Running
+      sequence:
+      - service: input_select.select_option
+        data:
+          option: Running
+        target:
+          entity_id: input_select.washing_machine_status
+  mode: single
+- id: '1674347490136'
+  alias: Turn on Hall Lamp
+  description: Turns on Hall Lamp with Sunrise
+  trigger:
+  - platform: sun
+    event: sunrise
+  condition: []
+  action:
+  - type: turn_on
+    device_id: 61eff37a3d2100574c121b7821b24a1d
+    entity_id: switch.tasmota_2
+    domain: switch
+  mode: single
+- id: '1674347540321'
+  alias: Goodnight Routine
+  description: Turns off lights when Alarm is armed to Home mode
+  trigger:
+  - platform: device
+    device_id: 65a8e8d2ed76c3e82bdf91ea161c5628
+    domain: alarm_control_panel
+    entity_id: alarm_control_panel.4216_victoria_dr_alarm_control_panel_alarm_control_panel
+    type: armed_home
+  condition: []
+  action:
+  - type: turn_off
+    device_id: 61eff37a3d2100574c121b7821b24a1d
+    entity_id: switch.tasmota_2
+    domain: switch
+  - type: turn_off
+    device_id: ede4b533a6dab86ba81173d2f6e07c28
+    entity_id: switch.family_room_sound_bar
+    domain: switch
+  - type: turn_off
+    device_id: c0fb3096102393970e54c3e0ad087a9a
+    entity_id: switch.dining_room_shelf_lights
     domain: switch
   mode: single

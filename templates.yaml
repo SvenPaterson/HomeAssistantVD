@@ -1,0 +1,12 @@
+#trigger:
+#  - platform: time_pattern
+#    minutes: "/1"
+#sensor:
+#  - name: "Tarrif Price"
+#    unit_of_measurement: USD
+#    state: >
+#          {% if is_state('utility_meter.monthly_energy', 'peak') %}
+#              {{ 0.10980 }}
+#          {% elif is_state('utility_meter.monthly_energy', 'offpeak') %}
+#             {{ 0.10218 }}
+#          {% endif %}

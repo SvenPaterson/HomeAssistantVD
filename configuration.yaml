@@ -1,3 +1,8 @@
+# Includes
+template: !include templates.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
 
 # Loads default set of integrations. Do not remove.
 default_config:
@@ -6,11 +11,57 @@ default_config:
 tts:
   - platform: google_translate
 
-automation: !include automations.yaml
-script: !include scripts.yaml
-scene: !include scenes.yaml
-
 # MariaDB
 recorder:
   db_url: !secret mariadb_url
+  purge_keep_days: 30
 history:
+
+
+climate:
+  # Guest Room thermostat
+  - platform: generic_thermostat
+    unique_id: guest_room_thermostat
+    name: Guest Room AC
+    heater: switch.guest_ac
+    target_sensor: sensor.guest_room_thermohygrometer_temperature
+    min_temp: 68
+    max_temp: 90
+    initial_hvac_mode: "off"
+    min_cycle_duration:
+      minutes: 10
+    target_temp: 74
+    away_temp: 80
+    cold_tolerance: 0.5
+    hot_tolerance: 0.5
+    ac_mode: true
+    precision: 0.5
+
+  # Master Bedroom thermostat
+  - platform: generic_thermostat
+    unique_id: master_bedroom_thermostat
+    name: Master Bedroom Heater
+    heater: switch.bedroom_heater
+    target_sensor: sensor.weather_station_temp
+    min_temp: 68
+    max_temp: 90
+    initial_hvac_mode: "off"
+    min_cycle_duration:
+      minutes: 10
+    target_temp: 74
+    away_temp: 80
+    cold_tolerance: 0.5
+    hot_tolerance: 0.5
+    ac_mode: false
+    precision: 0.5
+  
+
+# size of Maria DB
+sensor:
+  - platform: sql
+    db_url: !secret mariadb_url
+    queries:
+      - name: MariaDB Size
+        query: "SELECT table_schema AS 'database', ROUND(SUM(data_length + index_length) / 1024 / 1024, 1) AS 'size' FROM information_schema.TABLES WHERE table_schema = 'homeassistant' GROUP BY table_schema;"
+        column: 'size'
+        unit_of_measurement: 'MB'
