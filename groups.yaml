@@ -1,0 +1,7 @@
+#create group of all phones
+family:
+  name: Family
+  all: false
+  entities:
+    - person.lindsay_garden
+    - person.stephengarden

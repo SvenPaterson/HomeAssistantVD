@@ -3,6 +3,7 @@ template: !include templates.yaml
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
+group: !include groups.yaml
 
 # Loads default set of integrations. Do not remove.
 default_config:
@@ -27,7 +28,7 @@ climate:
     target_sensor: sensor.guest_room_thermohygrometer_temperature
     min_temp: 68
     max_temp: 90
-    initial_hvac_mode: "off"
+    initial_hvac_mode: "cool"
     min_cycle_duration:
       minutes: 10
     target_temp: 74
@@ -35,7 +36,7 @@ climate:
     cold_tolerance: 0.5
     hot_tolerance: 0.5
     ac_mode: true
-    precision: 0.5
+    precision: 1
 
   # Master Bedroom thermostat
   - platform: generic_thermostat
@@ -43,17 +44,17 @@ climate:
     name: Master Bedroom Heater
     heater: switch.bedroom_heater
     target_sensor: sensor.weather_station_temp
-    min_temp: 68
+    min_temp: 65
     max_temp: 90
-    initial_hvac_mode: "off"
+    initial_hvac_mode: "heat"
     min_cycle_duration:
       minutes: 10
-    target_temp: 74
+    target_temp: 69
     away_temp: 80
     cold_tolerance: 0.5
     hot_tolerance: 0.5
     ac_mode: false
-    precision: 0.5
+    precision: 1
   
 
 # size of Maria DB

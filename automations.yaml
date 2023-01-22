@@ -228,7 +228,7 @@
     entity_id: sensor.s31_3_washing_machine_energy_power
     for:
       hours: 0
-      minutes: 2
+      minutes: 3
       seconds: 0
     id: 'Off'
     below: 3
@@ -236,8 +236,8 @@
     entity_id: sensor.s31_3_washing_machine_energy_power
     for:
       hours: 0
-      minutes: 30
-      seconds: 0
+      minutes: 0
+      seconds: 30
     id: Idling
     below: 10
     above: 3
@@ -312,4 +312,126 @@
     device_id: c0fb3096102393970e54c3e0ad087a9a
     entity_id: switch.dining_room_shelf_lights
     domain: switch
+  mode: single
+- id: '1674405833015'
+  alias: Washing Machine Completed Notification
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - input_select.washing_machine_status
+    to: 'Off'
+  condition: []
+  action:
+  - service: notify.mobile_app_amos_iphone
+    data:
+      message: Washing Machine done and ready to be emptied!
+      title: Laundry Room
+  - if:
+    - condition: state
+      entity_id: media_player.family_room_lgtv
+      state: 'off'
+    then: []
+    else:
+    - service: notify.family_room_lgtv
+      data:
+        message: Washing machine finished!
+  - service: notify.mobile_app_lindsays_iphone
+    data:
+      message: Washing Machine complete and ready to be emptied!
+      title: Laundry Room
+  mode: single
+- id: '1674418857081'
+  alias: Home Status Logic
+  description: Logic to determine current status of home based on occupancy and alarm
+  trigger:
+  - platform: state
+    entity_id:
+    - alarm_control_panel.4216_victoria_dr_alarm_control_panel_alarm_control_panel
+    to: armed_home
+    id: Night
+  - platform: numeric_state
+    entity_id: zone.home
+    attribute: persons
+    above: 0
+    id: Home
+  - platform: numeric_state
+    entity_id: zone.home
+    attribute: persons
+    below: 1
+    id: Away
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: Night
+      sequence:
+      - service: input_select.select_option
+        data:
+          option: Night
+        target:
+          entity_id: input_select.house_status
+    - conditions:
+      - condition: trigger
+        id: Home
+      sequence:
+      - service: input_select.select_option
+        data:
+          option: Home
+        target:
+          entity_id: input_select.house_status
+    - conditions:
+      - condition: trigger
+        id: Away
+      sequence:
+      - service: input_select.select_option
+        data:
+          option: Away
+        target:
+          entity_id: input_select.house_status
+  mode: single
+- id: '1674420171955'
+  alias: House Status Actions
+  description: What happens when we all come and go from the house
+  trigger:
+  - platform: state
+    entity_id:
+    - input_select.house_status
+    to: Away
+    id: Away
+  - platform: state
+    entity_id:
+    - input_select.house_status
+    to: Home
+    id: Home
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: Away
+      sequence:
+      - service: climate.set_preset_mode
+        data:
+          preset_mode: away
+        target:
+          entity_id:
+          - climate.master_bedroom_heater
+          - climate.guest_room
+      - service: switch.turn_off
+        data: {}
+        target:
+          entity_id: switch.all_lights
+    - conditions:
+      - condition: trigger
+        id: Home
+      sequence:
+      - service: climate.set_preset_mode
+        data:
+          preset_mode: none
+        target:
+          entity_id:
+          - climate.master_bedroom_heater
+          - climate.guest_room
   mode: single
