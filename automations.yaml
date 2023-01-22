@@ -435,3 +435,33 @@
           - climate.master_bedroom_heater
           - climate.guest_room
   mode: single
+- id: '1674421594354'
+  alias: Notifications Test Lab
+  description: ''
+  trigger: []
+  condition: []
+  action:
+  - service: notify.mobile_app_amos_iphone
+    data:
+      title: Washing Done
+      message: Your washing is ready
+      data:
+        actions:
+        - action: WASHER_EMPTIED
+          title: Emptied Washing Machine
+        - action: REMIND30
+          title: Remind me in 30mins
+  - wait_for_trigger:
+    - platform: event
+      event_type: mobile_app_notification_action
+      event_data:
+        action: REMIND30
+    timeout:
+      hours: 0
+      minutes: 1
+      seconds: 0
+      milliseconds: 0
+  - service: notify.mobile_app_amos_iphone
+    data:
+      message: will remind you again in 30mins to get laundry
+  mode: single
