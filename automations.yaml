@@ -1,37 +1,41 @@
 - id: '1657894966012'
-  alias: SubWoof to ON when Marantz to ON
-  description: Power On SubWoofer When Marantz Turns On
+  alias: 'Office: Subwoofer Sync With Home Theater'
+  description: Power On SubWoofer When Marantz Turns On and vice versa
   trigger:
   - platform: device
     device_id: 2cb05ea25c946bf67aaab462a36a5ba2
     domain: media_player
     entity_id: media_player.marantz_sr5011
     type: turned_on
-  condition: []
-  action:
-  - type: turn_on
-    device_id: 86db6e60ff14c3daf2aa2ee9113f7d34
-    entity_id: switch.h103_subwoof
-    domain: switch
-  mode: single
-- id: '1657895040432'
-  alias: SubWoof to OFF when Marantz to OFF
-  description: Turn off Sub Woofer when Marantz is turned off.
-  trigger:
+    id: HT_ON
   - platform: device
     device_id: 2cb05ea25c946bf67aaab462a36a5ba2
     domain: media_player
     entity_id: media_player.marantz_sr5011
     type: turned_off
+    id: HT_OFF
   condition: []
   action:
-  - type: turn_off
-    device_id: 86db6e60ff14c3daf2aa2ee9113f7d34
-    entity_id: switch.h103_subwoof
-    domain: switch
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: HT_ON
+      sequence:
+      - service: switch.turn_on
+        data: {}
+        target:
+          device_id: 86db6e60ff14c3daf2aa2ee9113f7d34
+    - conditions:
+      - condition: trigger
+        id: HT_OFF
+      sequence:
+      - service: switch.turn_off
+        data: {}
+        target:
+          device_id: 86db6e60ff14c3daf2aa2ee9113f7d34
   mode: single
 - id: '1658353178227'
-  alias: SubWoof Post Power-Restore State
+  alias: 'Office: SubWoof Post Power-Restore State'
   description: ''
   trigger:
   - platform: time
@@ -70,93 +74,72 @@
     type: arm_home
   mode: single
 - id: '1661019086429'
-  alias: Mushroom Grow Light Schedule On
+  alias: 'Schedule: Mushroom Grow Light'
   description: ''
   trigger:
   - platform: sun
     event: sunrise
     offset: 0
-  condition: []
-  action:
-  - type: turn_on
-    device_id: 74db76f01d47eb0d5ee0172843cef94b
-    entity_id: switch.shellyplugus_083af20077a4_switch_0
-    domain: switch
-  mode: single
-- id: '1661019131309'
-  alias: Mushroom Grow Light Schedule Off
-  description: ''
-  trigger:
+    id: SunUp
   - platform: sun
     event: sunset
     offset: 0
+    id: SunDown
   condition: []
   action:
-  - type: turn_off
-    device_id: 74db76f01d47eb0d5ee0172843cef94b
-    entity_id: switch.shellyplugus_083af20077a4_switch_0
-    domain: switch
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: SunUp
+      sequence:
+      - type: turn_on
+        device_id: 74db76f01d47eb0d5ee0172843cef94b
+        entity_id: switch.shellyplugus_083af20077a4_switch_0
+        domain: switch
+    - conditions:
+      - condition: trigger
+        id: SunDown
+      sequence:
+      - type: turn_off
+        device_id: 74db76f01d47eb0d5ee0172843cef94b
+        entity_id: switch.shellyplugus_083af20077a4_switch_0
+        domain: switch
   mode: single
 - id: '1661712457366'
-  alias: Outdoor Lights Off Schedule
+  alias: 'Schedule: Outdoor Lights'
   description: ''
   trigger:
   - platform: sun
     event: sunrise
     offset: 00:30
-  condition: []
-  action:
-  - type: turn_off
-    device_id: 2c08e34bae34dc323d643e118ed164ab
-    entity_id: switch.porch_lights
-    domain: switch
-  - type: turn_off
-    device_id: cbc2b47b4b49d61ad30b3e017bc9d28f
-    entity_id: switch.driveway_light
-    domain: switch
-  mode: single
-- id: '1661712592041'
-  alias: Outdoor Lights On Schedule
-  description: ''
-  trigger:
+    alias: When the sun sets offset by 30
+    id: SunUp
   - platform: sun
     event: sunset
-    offset: -00:30
+    offset: '-30'
+    id: SunDown
   condition: []
   action:
-  - type: turn_on
-    device_id: 2c08e34bae34dc323d643e118ed164ab
-    entity_id: switch.porch_lights
-    domain: switch
-  - type: turn_on
-    device_id: cbc2b47b4b49d61ad30b3e017bc9d28f
-    entity_id: switch.driveway_light
-    domain: switch
-  mode: single
-- id: '1673286198027'
-  alias: Turn Off DeHu if Basement Dry
-  description: ''
-  trigger:
-  - type: humidity
-    platform: device
-    device_id: 098e716c72ce23dc1b3b9c034c10396a
-    entity_id: sensor.basement_thermohygrometer_humidity
-    domain: sensor
-    below: 40
-  condition:
-  - condition: device
-    type: is_on
-    device_id: 8025240608bcc6181c8bd2873929eee9
-    entity_id: switch.tasmota
-    domain: switch
-  action:
-  - type: turn_off
-    device_id: 8025240608bcc6181c8bd2873929eee9
-    entity_id: switch.tasmota
-    domain: switch
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: SunUp
+      sequence:
+      - service: switch.turn_off
+        data: {}
+        target:
+          entity_id: switch.outdoor_lights
+    - conditions:
+      - condition: trigger
+        id: SunDown
+      sequence:
+      - service: switch.turn_on
+        data: {}
+        target:
+          entity_id: switch.outdoor_lights
   mode: single
 - id: '1673286341891'
-  alias: Turn On DeHu if Basement Damp
+  alias: Dehumidifier Power
   description: ''
   trigger:
   - type: humidity
@@ -165,20 +148,36 @@
     entity_id: sensor.basement_thermohygrometer_humidity
     domain: sensor
     above: 45
-  condition:
-  - condition: device
-    type: is_off
-    device_id: 8025240608bcc6181c8bd2873929eee9
-    entity_id: switch.tasmota
-    domain: switch
+    id: Basement Damp
+  - type: humidity
+    platform: device
+    device_id: 098e716c72ce23dc1b3b9c034c10396a
+    entity_id: sensor.basement_thermohygrometer_humidity
+    domain: sensor
+    below: 35
+    id: Basement Dry
+  condition: []
   action:
-  - type: turn_on
-    device_id: 8025240608bcc6181c8bd2873929eee9
-    entity_id: switch.tasmota
-    domain: switch
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: Basement Damp
+      sequence:
+      - service: switch.turn_on
+        data: {}
+        target:
+          entity_id: switch.tasmota
+    - conditions:
+      - condition: trigger
+        id: Basement Dry
+      sequence:
+      - service: switch.turn_off
+        data: {}
+        target:
+          entity_id: switch.tasmota
   mode: single
 - id: '1673286578742'
-  alias: ThermoHygrometer Low Battery Warning
+  alias: 'Notifications: ThermoHygrometer Low Battery Warning'
   description: ''
   trigger:
   - platform: time
@@ -205,7 +204,7 @@
       title: Low Battery Warning
   mode: single
 - id: '1673891966542'
-  alias: Ping TV
+  alias: 'Notifications: Ping TV'
   description: ''
   trigger:
   - platform: device
@@ -220,7 +219,7 @@
       message: I love you!
   mode: single
 - id: '1674314800351'
-  alias: Washing Machine Status
+  alias: 'Laundry: Washing Machine Status'
   description: Logic to determine current status of washing machine based on power
     output of device
   trigger:
@@ -290,7 +289,7 @@
     domain: switch
   mode: single
 - id: '1674347540321'
-  alias: Goodnight Routine
+  alias: 'Home: Goodnight Routine'
   description: Turns off lights when Alarm is armed to Home mode
   trigger:
   - platform: device
@@ -314,7 +313,7 @@
     domain: switch
   mode: single
 - id: '1674405833015'
-  alias: Washing Machine Completed Notification
+  alias: 'Laundry: Washing Machine Completed Notification'
   description: ''
   trigger:
   - platform: state
@@ -335,7 +334,7 @@
     else:
     - service: notify.family_room_lgtv
       data:
-        message: Washing machine finished!
+        message: Washing machine is finished!
   - service: notify.mobile_app_lindsays_iphone
     data:
       message: Washing Machine complete and ready to be emptied!
@@ -447,10 +446,13 @@
       message: Your washing is ready
       data:
         actions:
-        - action: WASHER_EMPTIED
-          title: Emptied Washing Machine
         - action: REMIND30
           title: Remind me in 30mins
+          icon: sfsymbols:clock
+        - action: WASHER_EMPTIED
+          title: Emptied Washing Machine
+          icon: sfsymbols:drop.circle
+          destructive: true
   - wait_for_trigger:
     - platform: event
       event_type: mobile_app_notification_action
@@ -461,7 +463,70 @@
       minutes: 1
       seconds: 0
       milliseconds: 0
+    continue_on_timeout: false
   - service: notify.mobile_app_amos_iphone
     data:
       message: will remind you again in 30mins to get laundry
+  mode: single
+- id: '1674435262405'
+  alias: 'Utilities: Hot Water Boost'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - input_button.hot_water_boost
+  condition: []
+  action:
+  - service: water_heater.set_operation_mode
+    data:
+      operation_mode: high_demand
+    target:
+      entity_id: water_heater.heat_pump_water_heater
+  - service: notify.mobile_app_amos_iphone
+    data:
+      message: Boost mode activated for 1hr
+      title: Water Heater
+  - delay:
+      hours: 1
+      minutes: 0
+      seconds: 0
+      milliseconds: 0
+  - service: water_heater.set_operation_mode
+    data:
+      operation_mode: heat_pump
+    target:
+      entity_id: water_heater.heat_pump_water_heater
+  mode: single
+- id: '1674438847978'
+  alias: 'Utilities: Water Heater Boost Helper Toggle'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - water_heater.heat_pump_water_heater
+    attribute: operation_mode
+    to: high_demand
+    id: to_boost
+  - platform: state
+    entity_id:
+    - water_heater.heat_pump_water_heater
+    to: heat_pump
+    id: to_normal
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: to_boost
+      sequence:
+      - service: input_boolean.turn_on
+        data: {}
+    - conditions:
+      - condition: trigger
+        id: to_normal
+      sequence:
+      - service: input_boolean.turn_off
+        data: {}
+        target:
+          entity_id: input_boolean.water_heater_boost_mode_helper
   mode: single
