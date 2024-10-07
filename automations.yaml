@@ -1,54 +1,5 @@
-- id: '1657894966012'
-  alias: 'Office: Subwoofer Sync With Home Theater'
-  description: Power On SubWoofer When Marantz Turns On and vice versa
-  trigger:
-  - platform: device
-    device_id: 2cb05ea25c946bf67aaab462a36a5ba2
-    domain: media_player
-    entity_id: media_player.marantz_sr5011
-    type: turned_on
-    id: HT_ON
-  - platform: device
-    device_id: 2cb05ea25c946bf67aaab462a36a5ba2
-    domain: media_player
-    entity_id: media_player.marantz_sr5011
-    type: turned_off
-    id: HT_OFF
-  condition: []
-  action:
-  - choose:
-    - conditions:
-      - condition: trigger
-        id: HT_ON
-      sequence:
-      - service: switch.turn_on
-        data: {}
-        target:
-          device_id: 86db6e60ff14c3daf2aa2ee9113f7d34
-    - conditions:
-      - condition: trigger
-        id: HT_OFF
-      sequence:
-      - service: switch.turn_off
-        data: {}
-        target:
-          device_id: 86db6e60ff14c3daf2aa2ee9113f7d34
-  mode: single
-- id: '1658353178227'
-  alias: 'Office: SubWoof Post Power-Restore State'
-  description: ''
-  trigger:
-  - platform: time
-    at: 01:00:00
-  condition: []
-  action:
-  - type: turn_off
-    device_id: 86db6e60ff14c3daf2aa2ee9113f7d34
-    entity_id: switch.h103_subwoof
-    domain: switch
-  mode: single
 - id: '1658793243219'
-  alias: Set SimpliSafe at Night
+  alias: 'ROUTINE: SimpliSafe @ Night'
   description: Arm SimpliSafe alarm to Home mode if either Lindsay or Stephen Device
     presence detected
   trigger:
@@ -74,7 +25,7 @@
     type: arm_home
   mode: single
 - id: '1661019086429'
-  alias: 'Schedule: Mushroom Grow Light'
+  alias: 'SCHEDULE: Mushroom Grow Light'
   description: ''
   trigger:
   - platform: sun
@@ -106,7 +57,7 @@
         domain: switch
   mode: single
 - id: '1661712457366'
-  alias: 'Schedule: Outdoor Lights'
+  alias: 'FRONT YARD: Lights Schedule'
   description: ''
   trigger:
   - platform: sun
@@ -138,73 +89,41 @@
         target:
           entity_id: switch.outdoor_lights
   mode: single
-- id: '1673286341891'
-  alias: Dehumidifier Power
-  description: ''
-  trigger:
-  - type: humidity
-    platform: device
-    device_id: 098e716c72ce23dc1b3b9c034c10396a
-    entity_id: sensor.basement_thermohygrometer_humidity
-    domain: sensor
-    above: 45
-    id: Basement Damp
-  - type: humidity
-    platform: device
-    device_id: 098e716c72ce23dc1b3b9c034c10396a
-    entity_id: sensor.basement_thermohygrometer_humidity
-    domain: sensor
-    below: 35
-    id: Basement Dry
-  condition: []
-  action:
-  - choose:
-    - conditions:
-      - condition: trigger
-        id: Basement Damp
-      sequence:
-      - service: switch.turn_on
-        data: {}
-        target:
-          entity_id: switch.tasmota
-    - conditions:
-      - condition: trigger
-        id: Basement Dry
-      sequence:
-      - service: switch.turn_off
-        data: {}
-        target:
-          entity_id: switch.tasmota
-  mode: single
 - id: '1673286578742'
-  alias: 'Notifications: ThermoHygrometer Low Battery Warning'
+  alias: 'SYSTEM: Govee Low Battery Warning'
   description: ''
   trigger:
-  - platform: time
-    at: '17:00:00'
+  - platform: numeric_state
+    entity_id: sensor.basement_thermohygrometer_battery
+    below: 10
+  - platform: numeric_state
+    entity_id: sensor.guest_room_thermohygrometer_battery
+    below: 10
+  - platform: numeric_state
+    entity_id:
+    - sensor.master_bedroom_thermohygrometer_battery
+    below: 10
   condition:
-  - condition: or
-    conditions:
-    - type: is_battery_level
-      condition: device
-      device_id: 1cb3e02eb08292e277f6b2997f995485
-      entity_id: sensor.guest_room_thermohygrometer_battery
-      domain: sensor
-      below: 10
-    - type: is_battery_level
-      condition: device
-      device_id: 1cb3e02eb08292e277f6b2997f995485
-      entity_id: sensor.guest_room_thermohygrometer_battery
-      domain: sensor
-      below: 10
+  - condition: time
+    after: '17:00:00'
+    before: '17:30:00'
+    weekday:
+    - sun
+    - mon
+    - tue
+    - wed
+    - thu
+    - sat
+    - fri
   action:
-  - service: notify.mobile_app_amos_iphone
-    data:
+  - data:
       message: Govee ThermoHygrometer Battery is below 10%. Replace batteries soon!
       title: Low Battery Warning
+      data: {}
+    action: notify.mobile_app_stephens_iphone
   mode: single
 - id: '1673891966542'
-  alias: 'Notifications: Ping TV'
+  alias: 'FAMILY ROOM: Ping TV'
   description: ''
   trigger:
   - platform: device
@@ -216,10 +135,10 @@
   action:
   - service: notify.family_room_lgtv
     data:
-      message: I love you!
+      message: Mummy and Daddy Love You!
   mode: single
 - id: '1674314800351'
-  alias: 'Laundry: Washing Machine Status'
+  alias: 'LAUNDRY: Washing Machine Status'
   description: Logic to determine current status of washing machine based on power
     output of device
   trigger:
@@ -230,7 +149,7 @@
       minutes: 3
       seconds: 0
     id: 'Off'
-    below: 3
+    below: 2
   - platform: numeric_state
     entity_id: sensor.s31_3_washing_machine_energy_power
     for:
@@ -276,7 +195,7 @@
           entity_id: input_select.washing_machine_status
   mode: single
 - id: '1674347490136'
-  alias: Turn on Hall Lamp
+  alias: 'ROUTINE: Sunrise'
   description: Turns on Hall Lamp with Sunrise
   trigger:
   - platform: sun
@@ -289,7 +208,7 @@
     domain: switch
   mode: single
 - id: '1674347540321'
-  alias: 'Home: Goodnight Routine'
+  alias: 'ROUTINE: Goodnight'
   description: Turns off lights when Alarm is armed to Home mode
   trigger:
   - platform: device
@@ -299,21 +218,13 @@
     type: armed_home
   condition: []
   action:
-  - type: turn_off
-    device_id: 61eff37a3d2100574c121b7821b24a1d
-    entity_id: switch.tasmota_2
-    domain: switch
-  - type: turn_off
-    device_id: ede4b533a6dab86ba81173d2f6e07c28
-    entity_id: switch.family_room_sound_bar
-    domain: switch
-  - type: turn_off
-    device_id: c0fb3096102393970e54c3e0ad087a9a
-    entity_id: switch.dining_room_shelf_lights
-    domain: switch
+  - service: scene.turn_on
+    target:
+      entity_id: scene.lights_off
+    metadata: {}
   mode: single
 - id: '1674405833015'
-  alias: 'Laundry: Washing Machine Completed Notification'
+  alias: 'LAUNDRY: Washing Machine Completed Notification'
   description: ''
   trigger:
   - platform: state
@@ -322,10 +233,10 @@
     to: 'Off'
   condition: []
   action:
-  - service: notify.mobile_app_amos_iphone
+  - service: notify.mobile_app_stephens_iphone
     data:
-      message: Washing Machine done and ready to be emptied!
       title: Laundry Room
+      message: Washing Machine complete and ready to be emptied!
   - if:
     - condition: state
       entity_id: media_player.family_room_lgtv
@@ -346,34 +257,27 @@
   trigger:
   - platform: state
     entity_id:
-    - alarm_control_panel.4216_victoria_dr_alarm_control_panel_alarm_control_panel
-    to: armed_home
-    id: Night
-  - platform: numeric_state
-    entity_id: zone.home
-    attribute: persons
-    above: 0
-    id: Home
-  - platform: numeric_state
-    entity_id: zone.home
-    attribute: persons
-    below: 1
-    id: Away
+    - person.stephengarden
+    to: Home
+    id: SUM1_HOME
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 3
+  - platform: state
+    entity_id: person.stephengarden
+    to: AWAY
+    id: ALL_GONE
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 3
   condition: []
   action:
   - choose:
     - conditions:
       - condition: trigger
-        id: Night
-      sequence:
-      - service: input_select.select_option
-        data:
-          option: Night
-        target:
-          entity_id: input_select.house_status
-    - conditions:
-      - condition: trigger
-        id: Home
+        id: SUM1_HOME
       sequence:
       - service: input_select.select_option
         data:
@@ -382,7 +286,7 @@
           entity_id: input_select.house_status
     - conditions:
       - condition: trigger
-        id: Away
+        id: ALL_GONE
       sequence:
       - service: input_select.select_option
         data:
@@ -391,25 +295,25 @@
           entity_id: input_select.house_status
   mode: single
 - id: '1674420171955'
-  alias: House Status Actions
+  alias: Home Status Actions
   description: What happens when we all come and go from the house
   trigger:
   - platform: state
     entity_id:
     - input_select.house_status
     to: Away
-    id: Away
+    id: ALL_AWAY
   - platform: state
     entity_id:
     - input_select.house_status
     to: Home
-    id: Home
+    id: ALL_HOME
   condition: []
   action:
   - choose:
     - conditions:
       - condition: trigger
-        id: Away
+        id: ALL_AWAY
       sequence:
       - service: climate.set_preset_mode
         data:
@@ -424,7 +328,7 @@
           entity_id: switch.all_lights
     - conditions:
       - condition: trigger
-        id: Home
+        id: ALL_HOME
       sequence:
       - service: climate.set_preset_mode
         data:
@@ -435,12 +339,12 @@
           - climate.guest_room
   mode: single
 - id: '1674421594354'
-  alias: Notifications Test Lab
+  alias: 'DEBUG: Test Lab'
   description: ''
   trigger: []
   condition: []
   action:
-  - service: notify.mobile_app_amos_iphone
+  - service: notify.mobile_app_stephens_iphone
     data:
       title: Washing Done
       message: Your washing is ready
@@ -464,41 +368,80 @@
       seconds: 0
       milliseconds: 0
     continue_on_timeout: false
-  - service: notify.mobile_app_amos_iphone
+  - service: notify.mobile_app_stephens_iphone
     data:
       message: will remind you again in 30mins to get laundry
   mode: single
 - id: '1674435262405'
-  alias: 'Utilities: Hot Water Boost'
+  alias: 'UTILITIES: Hot Water Boost'
   description: ''
   trigger:
   - platform: state
     entity_id:
-    - input_button.hot_water_boost
+    - input_boolean.hot_water_boost
+    from: 'off'
+    to: 'on'
+    id: boost_mode_activated
+  - platform: state
+    entity_id:
+    - timer.hot_water_boost_mode_timer
+    from: active
+    to: idle
+    id: boost_mode_timer_stopped
+  - platform: state
+    entity_id:
+    - input_boolean.hot_water_boost
+    from: 'on'
+    to: 'off'
+    id: boost_mode_cancelled
   condition: []
   action:
-  - service: water_heater.set_operation_mode
-    data:
-      operation_mode: high_demand
-    target:
-      entity_id: water_heater.heat_pump_water_heater
-  - service: notify.mobile_app_amos_iphone
-    data:
-      message: Boost mode activated for 1hr
-      title: Water Heater
-  - delay:
-      hours: 1
-      minutes: 0
-      seconds: 0
-      milliseconds: 0
-  - service: water_heater.set_operation_mode
-    data:
-      operation_mode: heat_pump
-    target:
-      entity_id: water_heater.heat_pump_water_heater
-  mode: single
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: boost_mode_activated
+      sequence:
+      - service: water_heater.set_operation_mode
+        data:
+          operation_mode: high_demand
+        target:
+          entity_id: water_heater.heat_pump_water_heater
+      - service: timer.start
+        data: {}
+        target:
+          entity_id: timer.hot_water_boost_mode_timer
+    - conditions:
+      - condition: trigger
+        id: boost_mode_timer_stopped
+      sequence:
+      - service: water_heater.set_operation_mode
+        data:
+          operation_mode: heat_pump
+        target:
+          entity_id: water_heater.heat_pump_water_heater
+      - service: input_boolean.turn_off
+        data: {}
+        target:
+          entity_id: input_boolean.hot_water_boost
+    - conditions:
+      - condition: trigger
+        id: boost_mode_cancelled
+      - condition: state
+        entity_id: timer.hot_water_boost_mode_timer
+        state: active
+      sequence:
+      - service: water_heater.set_operation_mode
+        data:
+          operation_mode: heat_pump
+        target:
+          entity_id: water_heater.heat_pump_water_heater
+      - service: timer.cancel
+        data: {}
+        target:
+          entity_id: timer.hot_water_boost_mode_timer
+  mode: parallel
 - id: '1674438847978'
-  alias: 'Utilities: Water Heater Boost Helper Toggle'
+  alias: 'UTILITIES: Water Heater Boost Helper Toggle'
   description: ''
   trigger:
   - platform: state
@@ -529,4 +472,425 @@
         data: {}
         target:
           entity_id: input_boolean.water_heater_boost_mode_helper
+  mode: single
+- id: '1674520573129'
+  alias: Guest Location Tracker
+  description: sets the guest users location to home if toggled on and vice versa
+  trigger:
+  - platform: state
+    entity_id: input_boolean.guest
+    from: 'off'
+    to: 'on'
+    id: guest-here
+  - platform: state
+    entity_id: input_boolean.guest
+    from: 'on'
+    to: 'off'
+    id: guest-gone
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: guest-here
+      sequence:
+      - service: device_tracker.see
+        data:
+          dev_id: guest
+          location_name: Home
+    - conditions:
+      - condition: trigger
+        id: guest-gone
+      sequence:
+      - service: device_tracker.see
+        data:
+          dev_id: guest
+          location_name: not_home
+  mode: single
+- id: '1674571299634'
+  alias: 'MASTER BEDROOM: Heater Schedule'
+  description: ''
+  use_blueprint:
+    path: panhans/heating_control.yaml
+    input:
+      heating:
+      - climate.master_bedroom_heater
+      set_temp: input_number.master_bedroom_comfort_temp
+      persons:
+      - person.lindsay_garden
+      - person.stephengarden
+      scheduler: schedule.master_bedroom_heating_schedule
+      winter_mode: input_boolean.winter_mode
+      party_mode: input_boolean.nap_mode
+      min_temp: 64
+- id: '1674593635269'
+  alias: 'TIMED TRIGGER: Nap Mode Timer'
+  description: Turns nap mode off for 2hrs
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.nap_mode
+    from: 'off'
+    to: 'on'
+    id: nap_mode_triggered
+  - platform: state
+    entity_id:
+    - input_boolean.nap_mode
+    from: 'on'
+    to: 'off'
+    id: nap_mode_cancelled
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: nap_mode_triggered
+      sequence:
+      - service: timer.start
+        data: {}
+        target:
+          entity_id: timer.nap_mode_timer
+      - wait_for_trigger:
+        - platform: state
+          entity_id:
+          - timer.nap_mode_timer
+          to: idle
+      - service: input_boolean.turn_off
+        data: {}
+        target:
+          entity_id: input_boolean.nap_mode
+    - conditions:
+      - condition: trigger
+        id: nap_mode_cancelled
+      - condition: state
+        entity_id: timer.nap_mode_timer
+        state: active
+      sequence:
+      - service: timer.cancel
+        data: {}
+        target:
+          entity_id: timer.nap_mode_timer
+  mode: parallel
+- id: '1687015242883'
+  alias: 'OFFICE: AC & HT'
+  description: will turn on office AC with home theater depending on the temperature
+    in the office
+  trigger:
+  - platform: state
+    entity_id:
+    - media_player.marantz_sr5011
+    from: 'off'
+    to: 'on'
+    id: HT-ON
+  - platform: state
+    entity_id:
+    - media_player.marantz_sr5011
+    from: 'on'
+    to: 'off'
+    id: HT-OFF
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: and
+        conditions:
+        - condition: trigger
+          id: HT-ON
+        - condition: numeric_state
+          entity_id: climate.office_window_ac
+          attribute: current_temperature
+          above: 74
+      sequence:
+      - service: climate.turn_on
+        data: {}
+        target:
+          entity_id: climate.office_window_ac
+      - service: climate.set_temperature
+        data:
+          temperature: 72
+        target:
+          entity_id: climate.office_window_ac
+    - conditions:
+      - condition: trigger
+        id: HT-OFF
+      sequence:
+      - service: climate.turn_off
+        data: {}
+        target:
+          entity_id: climate.office_window_ac
+  mode: single
+- id: '1687712963822'
+  alias: 'GUEST ROOM: Climate Trigger'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - schedule.guest_room_heating_schedule
+    from: 'off'
+    to: 'on'
+    id: schedule_on
+  - platform: state
+    entity_id:
+    - schedule.guest_room_heating_schedule
+    from: 'on'
+    to: 'off'
+    id: schedule_off
+  - platform: state
+    entity_id:
+    - input_boolean.overide_guest_room_schedule
+    from: 'off'
+    to: 'on'
+    id: override_on
+  - platform: state
+    entity_id:
+    - input_boolean.overide_guest_room_schedule
+    from: 'on'
+    to: 'off'
+    id: override_off
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: override_on
+      sequence:
+      - service: climate.turn_on
+        data: {}
+        target:
+          entity_id: climate.guest_room
+    - conditions:
+      - condition: trigger
+        id: override_off
+      - condition: state
+        entity_id: schedule.guest_room_heating_schedule
+        state: 'off'
+      sequence:
+      - service: climate.turn_off
+        data: {}
+        target:
+          entity_id: climate.guest_room
+    - conditions:
+      - condition: trigger
+        id: schedule_on
+      - condition: state
+        entity_id: input_boolean.guest
+        state: 'on'
+      sequence:
+      - service: climate.turn_on
+        data: {}
+        target:
+          entity_id: climate.guest_room
+    - conditions:
+      - condition: trigger
+        id: schedule_off
+      - condition: state
+        entity_id: input_boolean.overide_guest_room_schedule
+        state: 'off'
+      sequence:
+      - service: climate.turn_off
+        data: {}
+        target:
+          entity_id: climate.guest_room
+  mode: single
+- id: '1691366909652'
+  alias: 'GUEST ROOM: Smart Charge Moto X4'
+  description: ''
+  trigger:
+  - type: battery_level
+    platform: device
+    device_id: cfa3aa26206b2f8199736a2d67241095
+    entity_id: d4caee3a89a511e67018fd695c0f2036
+    domain: sensor
+    below: 20
+    id: low_charge
+  - type: battery_level
+    platform: device
+    device_id: cfa3aa26206b2f8199736a2d67241095
+    entity_id: d4caee3a89a511e67018fd695c0f2036
+    domain: sensor
+    above: 80
+    id: high_charge
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - low_charge
+      sequence:
+      - type: turn_on
+        device_id: 8e14b3705b78b7ec7199d20c58b1da20
+        entity_id: 85b41369d91d2efc0424cd2d1916e239
+        domain: switch
+    - conditions:
+      - condition: trigger
+        id:
+        - high_charge
+      sequence:
+      - type: turn_off
+        device_id: 8e14b3705b78b7ec7199d20c58b1da20
+        entity_id: 85b41369d91d2efc0424cd2d1916e239
+        domain: switch
+      - service: counter.increment
+        data: {}
+        target:
+          entity_id: counter.motox4_charge_cycles
+  mode: single
+- id: '1691793928348'
+  alias: 'MASTER BEDROOM: Winter Mode Off'
+  description: 'When out of winter and heat is not required in master bedroom, turn
+    outlet on and treat as a normal outlet. '
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.winter_mode
+    from: 'on'
+    to: 'off'
+  condition: []
+  action:
+  - service: switch.turn_on
+    data: {}
+    target:
+      device_id: bf02543848006e26fe21c8652c3c4efa
+  mode: single
+- id: '1703423323385'
+  alias: 'LIVINGROOM: Hi Fi Power'
+  description: Will turn on and off the hifi if chromecast is playing music or in
+    standby
+  trigger:
+  - platform: state
+    entity_id:
+    - media_player.chromecastaudio6350
+    from:
+    to: playing
+    id: Music Playing
+  - platform: state
+    entity_id:
+    - media_player.chromecastaudio6350
+    from:
+    to: idle
+    id: Music Stopped
+  - platform: state
+    entity_id:
+    - media_player.chromecastaudio6350
+    from:
+    to: 'off'
+    id: Turns Off
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - Music Playing
+      sequence:
+      - type: turn_on
+        device_id: 86db6e60ff14c3daf2aa2ee9113f7d34
+        entity_id: eff5b741e3dbb05ef4230bf55183d628
+        domain: switch
+    - conditions:
+      - condition: or
+        conditions:
+        - condition: trigger
+          id:
+          - Music Stopped
+          - Turns Off
+      sequence:
+      - type: turn_off
+        device_id: 86db6e60ff14c3daf2aa2ee9113f7d34
+        entity_id: eff5b741e3dbb05ef4230bf55183d628
+        domain: switch
+  mode: single
+- id: '1705686016456'
+  alias: 'OFFICE: AppleTV Turn ON'
+  description: will turn on the marantz receiver and switch to correct input
+  trigger:
+  - platform: state
+    entity_id:
+    - media_player.apple_tv
+    from: standby
+  - platform: state
+    entity_id:
+    - media_player.apple_tv
+    from: idle
+  condition: []
+  action:
+  - service: media_player.turn_on
+    target:
+      device_id: 2cb05ea25c946bf67aaab462a36a5ba2
+    data: {}
+  - service: denonavr.get_command
+    target:
+      device_id: 2cb05ea25c946bf67aaab462a36a5ba2
+    data:
+      command: /goform/formiPhoneAppDirect.xml?SIMPLAY
+  - service: denonavr.get_command
+    target:
+      device_id: 2cb05ea25c946bf67aaab462a36a5ba2
+    data:
+      command: /goform/formiPhoneAppDirect.xml?MV50
+  mode: single
+- id: '1726002348254'
+  alias: 'BASEMENT: Water Leak Detected'
+  description: What will happen if water is detected in the basement
+  trigger:
+  - type: moist
+    platform: device
+    device_id: 2ab23a7631af7a31eeea156c467b872f
+    entity_id: bc37ae6feb2891abee30bb0f42956fc7
+    domain: binary_sensor
+  condition: []
+  action:
+  - action: scene.turn_on
+    target:
+      entity_id: scene.important_announcement
+  - repeat:
+      while:
+      - type: is_moist
+        condition: device
+        device_id: 2ab23a7631af7a31eeea156c467b872f
+        entity_id: bc37ae6feb2891abee30bb0f42956fc7
+        domain: binary_sensor
+      sequence:
+      - data:
+          message: Water detected under the Water Heater
+          title: Water Leak!!!
+          data:
+            push:
+              sound:
+                name: default
+                critical: 1
+                volume: 1
+        action: notify.mobile_app_stephens_iphone
+      - delay: 00:05:00
+  - action: scene.turn_on
+    target:
+      entity_id: scene.return_to_normal_volume
+  mode: single
+- id: '1726002967988'
+  alias: 'SYSTEM: Water Tank Sensor Low Batt'
+  description: ''
+  trigger:
+  - type: bat_low
+    platform: device
+    device_id: 2ab23a7631af7a31eeea156c467b872f
+    entity_id: 8551d486e581903f930c0ee26e7d43ee
+    domain: binary_sensor
+  condition:
+  - condition: time
+    after: '18:00:00'
+    before: '18:30:00'
+    weekday:
+    - sun
+    - mon
+    - tue
+    - wed
+    - thu
+    - sat
+    - fri
+  action:
+  - data:
+      message: Water Tank Leak Sensor Battery is low. Replace batteries soon!
+      title: Low Battery Warning
+      data: {}
+    action: notify.mobile_app_stephens_iphone
   mode: single

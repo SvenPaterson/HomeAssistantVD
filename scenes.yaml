@@ -1,1 +1,50 @@
-[]
+- id: '1703422760932'
+  name: All Downstairs Lights Off
+  entities:
+    switch.tasmota_2:
+      state: 'off'
+    switch.family_room_sound_bar:
+      state: 'off'
+    switch.tasmota_3:
+      state: 'off'
+    switch.s31_8_livingroomlamp_living_room_lamp:
+      state: 'off'
+    switch.dining_room_shelf_lights:
+      state: 'off'
+    switch.s31_9_livingroomlamp_living_room_lamp:
+      state: 'off'
+    switch.tasmota_4:
+      state: 'off'
+  icon: mdi:lightbulb-group-off-outline
+  metadata: {}
+  
+- id: '1726144246562'
+  name: Important Announcement Volume
+  entities:
+  entities:
+    media_player.kitchen_speaker:
+      state: 'on'
+      attributes:
+        volume_level: 1
+      is_volume_muted: false
+    media_player.family_room_speaker:
+      state: 'on'
+      attributes:
+        volume_level: 1
+  icon: mdi:volume-high
+  metadata: {}
+  
+- id: '1726144246563'
+  name: Return to Normal Volume
+  entities:
+    media_player.kitchen_speaker:
+      state: 'on'
+      attributes:
+        volume_level: .3
+      is_volume_muted: false
+    media_player.family_room_speaker:
+      state: 'on'
+      attributes:
+        volume_level: .3
+  icon: mdi:volume-medium
+  metadata: {}

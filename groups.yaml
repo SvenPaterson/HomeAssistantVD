@@ -5,3 +5,16 @@ family:
   entities:
     - person.lindsay_garden
     - person.stephengarden
+
+someone_home:
+  name: Someone home
+  entities:
+    - person.lindsay_garden
+    - person.stephengarden
+    - person.guest
+
+all_speakers:
+  name: All Speakers
+  entities:
+    - media_player.family_room_speaker
+    - media_player.kitchen_speaker

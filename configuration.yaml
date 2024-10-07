@@ -16,8 +16,11 @@ tts:
 recorder:
   db_url: !secret mariadb_url
   purge_keep_days: 30
-history:
+#  exclude:
+#    entities:
+#      none yet!
 
+history:
 
 climate:
   # Guest Room thermostat
@@ -25,37 +28,37 @@ climate:
     unique_id: guest_room_thermostat
     name: Guest Room AC
     heater: switch.guest_ac
+    #switch.guest_ac
     target_sensor: sensor.guest_room_thermohygrometer_temperature
-    min_temp: 68
-    max_temp: 90
-    initial_hvac_mode: "cool"
+    min_temp: 66
+    max_temp: 80
+    initial_hvac_mode: "off"
     min_cycle_duration:
       minutes: 10
-    target_temp: 76
-    away_temp: 80
+    target_temp: 72
+    away_temp: 66
     cold_tolerance: 0.5
     hot_tolerance: 0.5
-    ac_mode: true
+    ac_mode: false
     precision: 1
 
   # Master Bedroom thermostat
   - platform: generic_thermostat
     unique_id: master_bedroom_thermostat
     name: Master Bedroom Heater
-    heater: switch.bedroom_heater
-    target_sensor: sensor.weather_station_temp
+    heater: switch.shelly1pm_master_bedroom
+    target_sensor: sensor.master_bedroom_thermohygrometer_temperature
     min_temp: 65
-    max_temp: 90
+    max_temp: 80
     initial_hvac_mode: "heat"
     min_cycle_duration:
       minutes: 10
     target_temp: 67
-    away_temp: 65
+    away_temp: 60
     cold_tolerance: 0.5
     hot_tolerance: 0.5
     ac_mode: false
     precision: 1
-  
 
 # size of Maria DB
 sensor:
@@ -64,5 +67,5 @@ sensor:
     queries:
       - name: MariaDB Size
         query: "SELECT table_schema AS 'database', ROUND(SUM(data_length + index_length) / 1024 / 1024, 1) AS 'size' FROM information_schema.TABLES WHERE table_schema = 'homeassistant' GROUP BY table_schema;"
-        column: 'size'
-        unit_of_measurement: 'MB'
+        column: "size"
+        unit_of_measurement: "MB"
