@@ -21,7 +21,6 @@
 - id: '1726144246562'
   name: Important Announcement Volume
   entities:
-  entities:
     media_player.kitchen_speaker:
       state: 'on'
       attributes:
