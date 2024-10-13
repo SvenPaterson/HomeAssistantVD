@@ -2,23 +2,23 @@
   alias: 'ROUTINE: SimpliSafe @ Night'
   description: Arm SimpliSafe alarm to Home mode if either Lindsay or Stephen Device
     presence detected
-  trigger:
-  - platform: time
-    at: '23:00:00'
-  condition:
+  triggers:
+  - at: '23:00:00'
+    trigger: time
+  conditions:
   - condition: or
     conditions:
     - condition: device
-      device_id: 73c12d1fa67caf9f2d89703a48ec3625
+      device_id: bda487d28bc8ebebf9966a016ae6fcde
       domain: device_tracker
-      entity_id: device_tracker.amos_iphone
+      entity_id: 68a961430eb7eebf9c5ff8be65c14878
       type: is_home
     - condition: device
       device_id: ce09a92f7cfc8eed6ee5a25a2ac70835
       domain: device_tracker
       entity_id: 34e229c4ec383bb1b64de135ddbae21d
       type: is_home
-  action:
+  actions:
   - device_id: 65a8e8d2ed76c3e82bdf91ea161c5628
     domain: alarm_control_panel
     entity_id: alarm_control_panel.4216_victoria_dr_alarm_control_panel_alarm_control_panel
@@ -832,17 +832,27 @@
 - id: '1726002348254'
   alias: 'BASEMENT: Water Leak Detected'
   description: What will happen if water is detected in the basement
-  trigger:
+  triggers:
   - type: moist
-    platform: device
     device_id: 2ab23a7631af7a31eeea156c467b872f
     entity_id: bc37ae6feb2891abee30bb0f42956fc7
     domain: binary_sensor
-  condition: []
-  action:
+    trigger: device
+  - trigger: state
+    entity_id:
+    - binary_sensor.titan_water_valve_actuator_water_leak_detected
+    from: 'off'
+    to: 'on'
+  conditions: []
+  actions:
+  - type: turn_off
+    device_id: 7128b104780e8c622078ae0fff2e2f6b
+    entity_id: 91c59e70b92e659bfff4619f93d9f991
+    domain: switch
   - action: scene.turn_on
     target:
       entity_id: scene.important_announcement
+    data: {}
   - repeat:
       while:
       - type: is_moist
@@ -852,7 +862,7 @@
         domain: binary_sensor
       sequence:
       - data:
-          message: Water detected under the Water Heater
+          message: Water detected in the basement!
           title: Water Leak!!!
           data:
             push:
@@ -861,10 +871,34 @@
                 critical: 1
                 volume: 1
         action: notify.mobile_app_stephens_iphone
-      - delay: 00:05:00
+      - action: notify.mobile_app_iphone_2
+        metadata: {}
+        data:
+          message: Water detected in the basement!
+          data:
+            push:
+              sound:
+                name: default
+                critical: 1
+                volume: 1
+          title: Water Leak!!!
+      - action: tts.speak
+        metadata: {}
+        data:
+          cache: true
+          message: Warning! Water detected in the basement!
+          media_player_entity_id: media_player.announcement_group
+        target:
+          entity_id: tts.piper
+      - delay:
+          hours: 0
+          minutes: 5
+          seconds: 0
+          milliseconds: 0
   - action: scene.turn_on
     target:
       entity_id: scene.return_to_normal_volume
+    data: {}
   mode: single
 - id: '1726002967988'
   alias: 'SYSTEM: Water Tank Sensor Low Batt'

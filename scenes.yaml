@@ -24,16 +24,16 @@
     media_player.kitchen_speaker:
       state: 'on'
       attributes:
-        volume_level: 1
+        volume_level: 1.0
       is_volume_muted: false
-    media_player.family_room_speaker:
+    media_player.family_speaker:
       state: 'on'
       attributes:
-        volume_level: 1
+        volume_level: 1.0
   icon: mdi:volume-high
   metadata: {}
   
-- id: '1726144246563'
+- id: '1726121346563'
   name: Return to Normal Volume
   entities:
     media_player.kitchen_speaker:
@@ -41,7 +41,7 @@
       attributes:
         volume_level: .3
       is_volume_muted: false
-    media_player.family_room_speaker:
+    media_player.family_speaker:
       state: 'on'
       attributes:
         volume_level: .3
