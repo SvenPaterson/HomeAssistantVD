@@ -756,27 +756,28 @@
   alias: 'LIVINGROOM: Hi Fi Power'
   description: Will turn on and off the hifi if chromecast is playing music or in
     standby
-  trigger:
-  - platform: state
-    entity_id:
+  triggers:
+  - entity_id:
     - media_player.chromecastaudio6350
     from:
     to: playing
     id: Music Playing
-  - platform: state
-    entity_id:
+    trigger: state
+  - entity_id:
     - media_player.chromecastaudio6350
     from:
     to: idle
     id: Music Stopped
-  - platform: state
-    entity_id:
+    trigger: state
+    for: 00:00:05
+  - entity_id:
     - media_player.chromecastaudio6350
     from:
     to: 'off'
     id: Turns Off
-  condition: []
-  action:
+    trigger: state
+  conditions: []
+  actions:
   - choose:
     - conditions:
       - condition: trigger
