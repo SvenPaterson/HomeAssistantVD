@@ -51,7 +51,7 @@ climate:
     target_sensor: sensor.master_bedroom_thermohygrometer_temperature
     min_temp: 65
     max_temp: 80
-    initial_hvac_mode: "heat"
+    initial_hvac_mode: "off"
     min_cycle_duration:
       minutes: 10
     target_temp: 67

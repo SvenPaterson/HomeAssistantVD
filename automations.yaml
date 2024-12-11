@@ -736,21 +736,36 @@
           entity_id: counter.motox4_charge_cycles
   mode: single
 - id: '1691793928348'
-  alias: 'MASTER BEDROOM: Winter Mode Off'
-  description: 'When out of winter and heat is not required in master bedroom, turn
-    outlet on and treat as a normal outlet. '
+  alias: 'MASTER BEDROOM: Winter Mode Control'
+  description: 'Control outlet behavior based on winter mode state, with heating schedule condition.'
   trigger:
   - platform: state
     entity_id:
     - input_boolean.winter_mode
-    from: 'on'
-    to: 'off'
   condition: []
   action:
-  - service: switch.turn_on
-    data: {}
-    target:
-      device_id: bf02543848006e26fe21c8652c3c4efa
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: input_boolean.winter_mode
+            state: 'on'
+          - condition: state
+            entity_id: schedule.master_bedroom_heating_schedule
+            state: 'off'
+        sequence:
+          - service: switch.turn_off
+            data: {}
+            target:
+              device_id: bf02543848006e26fe21c8652c3c4efa
+      - conditions:
+          - condition: state
+            entity_id: input_boolean.winter_mode
+            state: 'off'
+        sequence:
+          - service: switch.turn_on
+            data: {}
+            target:
+              device_id: bf02543848006e26fe21c8652c3c4efa
   mode: single
 - id: '1703423323385'
   alias: 'LIVINGROOM: Hi Fi Power'
