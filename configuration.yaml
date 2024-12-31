@@ -1,9 +1,10 @@
 # Includes
-template: !include templates.yaml
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
 group: !include groups.yaml
+climate: !include climate.yaml
+template: !include templates.yaml
 
 # Loads default set of integrations. Do not remove.
 default_config:
@@ -23,46 +24,74 @@ recorder:
 
 history:
 
-climate:
-  # Guest Room thermostat
-  - platform: generic_thermostat
-    unique_id: guest_room_thermostat
-    name: Guest Room AC
-    heater: switch.guest_ac
-    #switch.guest_ac
-    target_sensor: sensor.guest_room_thermohygrometer_temperature
-    min_temp: 66
-    max_temp: 80
-    initial_hvac_mode: "off"
-    min_cycle_duration:
-      minutes: 10
-    target_temp: 72
-    away_temp: 66
-    cold_tolerance: 0.5
-    hot_tolerance: 0.5
-    ac_mode: false
-    precision: 1
+influxdb:
+  host: 192.168.1.100
+  port: 8086
+  database: homeassistant
+  username: stephengarden
+  password: !secret influxdb_pw
+  max_retries: 3
+  default_measurement: state
+  include:
+    entity_globs:
+      - sensor.sump_pump*
 
-  # Master Bedroom thermostat
-  - platform: generic_thermostat
-    unique_id: master_bedroom_thermostat
-    name: Master Bedroom Heater
-    heater: switch.shelly1pm_master_bedroom
-    target_sensor: sensor.master_bedroom_thermohygrometer_temperature
-    min_temp: 65
-    max_temp: 80
-    initial_hvac_mode: "off"
-    min_cycle_duration:
-      minutes: 10
-    target_temp: 67
-    away_temp: 60
-    cold_tolerance: 0.5
-    hot_tolerance: 0.5
-    ac_mode: false
-    precision: 1
+conversation:
+  intents:
+    SetTimer:
+      - "Set a timer for {duration}"
+    CancelTimer:
+      - "Cancel the timer"
 
-# size of Maria DB
+timer:
+  undercabinet_vacuum:
+    duration: "00:00:20"
+
+input_datetime:
+  sump_pump_last_started:
+    name: "Sump Pump Time Started"
+    has_time: true
+    has_date: true
+    icon: mdi:clock
+
+input_number:
+  sump_pump_activations_daily:
+    name: "Daily Activations of Sump Pump"
+    min: 0
+    max: 10000
+    step: 1
+    unit_of_measurement: "#"
+
+  sump_pump_lifetime_activations:
+    name: "The total number of occurances of the primary sump pump running"
+    min: 0
+    max: 1000000
+    step: 1
+    unit_of_measurement: "#"
+
+  sump_pump_runtime_daily:
+    name: "Daily Total Runtime of Sump Pump in seconds"
+    min: 0
+    max: 1000000
+    step: 1
+    unit_of_measurement: "secs"
+
+  sump_pump_total_hrs:
+    name: "Total # of machine hours of sump pump"
+    min: 0
+    max: 1000000
+    step: 0.1
+    unit_of_measurement: "hrs"
+
+  sump_pump_last_runtime:
+    name: "The # of secs the most recent sump pump activation lasted"
+    min: 0
+    max: 1000000
+    step: 1
+    unit_of_measurement: "secs"
+
 sensor:
+  # size of Maria DB
   - platform: sql
     db_url: !secret mariadb_url
     queries:
@@ -70,3 +99,5 @@ sensor:
         query: "SELECT table_schema AS 'database', ROUND(SUM(data_length + index_length) / 1024 / 1024, 1) AS 'size' FROM information_schema.TABLES WHERE table_schema = 'homeassistant' GROUP BY table_schema;"
         column: "size"
         unit_of_measurement: "MB"
+
+

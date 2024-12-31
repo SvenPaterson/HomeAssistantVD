@@ -2,22 +2,38 @@
   name: All Downstairs Lights Off
   entities:
     switch.tasmota_2:
+      friendly_name: S31_6_HallLamp Hall Lamp
       state: 'off'
     switch.family_room_sound_bar:
+      icon: mdi:floor-lamp
+      friendly_name: S31_5_DiningRoomLamp Dining Room Lamp
       state: 'off'
     switch.tasmota_3:
+      friendly_name: S31_7_LivingRoomLamp Living Room Lamp
       state: 'off'
     switch.s31_8_livingroomlamp_living_room_lamp:
+      friendly_name: S31_8_LivingRoomLamp Living Room Lamp
       state: 'off'
     switch.dining_room_shelf_lights:
+      icon: mdi:lamps-outline
+      friendly_name: S31_4_DiningRoomSelfLights Dining Room Shelf Lights
       state: 'off'
     switch.s31_9_livingroomlamp_living_room_lamp:
+      friendly_name: S31_9_LivingRoomLamp Living Room Lamp
       state: 'off'
     switch.tasmota_4:
+      friendly_name: S31_10_LivingRoomLamp Living Room Lamp
+      state: 'off'
+    light.family_room_lights:
+      supported_color_modes:
+      - brightness
+      color_mode: brightness
+      brightness: 3
+      friendly_name: 'Family Room Lights '
+      supported_features: 32
       state: 'off'
   icon: mdi:lightbulb-group-off-outline
   metadata: {}
-  
 - id: '1726144246562'
   name: Important Announcement Volume
   entities:
@@ -32,18 +48,17 @@
         volume_level: 1.0
   icon: mdi:volume-high
   metadata: {}
-  
 - id: '1726121346563'
   name: Return to Normal Volume
   entities:
     media_player.kitchen_speaker:
       state: 'on'
       attributes:
-        volume_level: .3
+        volume_level: 0.3
       is_volume_muted: false
     media_player.family_speaker:
       state: 'on'
       attributes:
-        volume_level: .3
+        volume_level: 0.3
   icon: mdi:volume-medium
   metadata: {}

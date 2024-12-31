@@ -16,5 +16,5 @@ someone_home:
 all_speakers:
   name: All Speakers
   entities:
-    - media_player.family_room_speaker
+    - media_player.family_speaker
     - media_player.kitchen_speaker

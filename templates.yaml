@@ -1,12 +1,28 @@
-#trigger:
-#  - platform: time_pattern
-#    minutes: "/1"
-#sensor:
-#  - name: "Tarrif Price"
-#    unit_of_measurement: USD
-#    state: >
-#          {% if is_state('utility_meter.monthly_energy', 'peak') %}
-#              {{ 0.10980 }}
-#          {% elif is_state('utility_meter.monthly_energy', 'offpeak') %}
-#             {{ 0.10218 }}
-#          {% endif %}
+sensor:
+  - name: "Sump Pump Activations Daily"
+    state: "{{ states('input_number.sump_pump_activations_daily') }}"
+    unit_of_measurement: "#"
+    icon: mdi:counter
+
+  - name: "Sump Pump Lifetime Activations"
+    state: "{{ states('input_number.sump_pump_lifetime_activations') }}"
+    unit_of_measurement: "#"
+    icon: mdi:counter
+
+  - name: "Sump Pump Runtime Daily"
+    state: "{{ states('input_number.sump_pump_runtime_daily') }}"
+    unit_of_measurement: "s"
+    icon: mdi:timer
+
+  - name: "Sump Pump Total Hours"
+    state: "{{ states('input_number.sump_pump_total_hrs') }}"
+    unit_of_measurement: "hrs"
+    icon: mdi:clock
+
+  - name: "Sump Pump Average Duration Per Activation"
+    state: >
+      {% set activations = states('input_number.sump_pump_activations_daily') | float %}
+      {% set runtime = states('input_number.sump_pump_runtime_daily') | float %}
+      {{ (runtime / activations) if activations > 0 else 0 }}
+    unit_of_measurement: "s"
+    icon: mdi:timer

@@ -737,7 +737,8 @@
   mode: single
 - id: '1691793928348'
   alias: 'MASTER BEDROOM: Winter Mode Control'
-  description: 'Control outlet behavior based on winter mode state, with heating schedule condition.'
+  description: Control outlet behavior based on winter mode state, with heating schedule
+    condition.
   trigger:
   - platform: state
     entity_id:
@@ -745,27 +746,27 @@
   condition: []
   action:
   - choose:
-      - conditions:
-          - condition: state
-            entity_id: input_boolean.winter_mode
-            state: 'on'
-          - condition: state
-            entity_id: schedule.master_bedroom_heating_schedule
-            state: 'off'
-        sequence:
-          - service: switch.turn_off
-            data: {}
-            target:
-              device_id: bf02543848006e26fe21c8652c3c4efa
-      - conditions:
-          - condition: state
-            entity_id: input_boolean.winter_mode
-            state: 'off'
-        sequence:
-          - service: switch.turn_on
-            data: {}
-            target:
-              device_id: bf02543848006e26fe21c8652c3c4efa
+    - conditions:
+      - condition: state
+        entity_id: input_boolean.winter_mode
+        state: 'on'
+      - condition: state
+        entity_id: schedule.master_bedroom_heating_schedule
+        state: 'off'
+      sequence:
+      - service: switch.turn_off
+        data: {}
+        target:
+          device_id: bf02543848006e26fe21c8652c3c4efa
+    - conditions:
+      - condition: state
+        entity_id: input_boolean.winter_mode
+        state: 'off'
+      sequence:
+      - service: switch.turn_on
+        data: {}
+        target:
+          device_id: bf02543848006e26fe21c8652c3c4efa
   mode: single
 - id: '1703423323385'
   alias: 'LIVINGROOM: Hi Fi Power'
@@ -943,4 +944,206 @@
       title: Low Battery Warning
       data: {}
     action: notify.mobile_app_stephens_iphone
+  mode: single
+- id: '1734216548855'
+  alias: Family Room Light Switch
+  description: Custom behavior of family room light switch
+  use_blueprint:
+    path: homeassistant/zen74_scene_control.yaml
+    input:
+      zooz_zen72: 522bab8c8a2a968016daa5ec2f434ed5
+      automation_mode: restart
+      dimmer_up_hold:
+      - device_id: 522bab8c8a2a968016daa5ec2f434ed5
+        domain: light
+        entity_id: f774ba21b30ae218189dc9acde95f824
+        type: brightness_increase
+      dimmer_up_2x:
+      - type: turn_on
+        device_id: 522bab8c8a2a968016daa5ec2f434ed5
+        entity_id: f774ba21b30ae218189dc9acde95f824
+        domain: light
+        brightness_pct: 100
+      dimmer_up_1x:
+      - type: turn_on
+        device_id: 522bab8c8a2a968016daa5ec2f434ed5
+        entity_id: f774ba21b30ae218189dc9acde95f824
+        domain: light
+        brightness_pct: 1
+      dimmer_down_1x:
+      - type: turn_off
+        device_id: 522bab8c8a2a968016daa5ec2f434ed5
+        entity_id: f774ba21b30ae218189dc9acde95f824
+        domain: light
+      dimmer_down_hold:
+      - device_id: 522bab8c8a2a968016daa5ec2f434ed5
+        domain: light
+        entity_id: f774ba21b30ae218189dc9acde95f824
+        type: brightness_decrease
+      dimmer_down_5x:
+      - action: light.turn_off
+        metadata: {}
+        data: {}
+        target:
+          area_id:
+          - kitchen
+          - family_room
+      - action: switch.turn_off
+        metadata: {}
+        data: {}
+        target:
+          device_id:
+          - c0fb3096102393970e54c3e0ad087a9a
+          - ede4b533a6dab86ba81173d2f6e07c28
+      dimmer_up_5x:
+      - action: media_player.play_media
+        metadata: {}
+        data:
+          media_content_id: https://www.youtube.com/watch?v=dQw4w9WgXcQ&pp=ygUJcmljayByb2xs
+          media_content_type: video/youtube
+        target:
+          device_id: cf7b3db23bee241e5f72697693f247d2
+- id: '1735251248014'
+  alias: 'BASEMENT: Kitchen Undercabinet Vacuum'
+  description: ''
+  triggers:
+  - entity_id: binary_sensor.kitchenkickplatetrigger_kickplate_switch
+    from: 'off'
+    to: 'on'
+    id: off_to_on
+    trigger: state
+  - entity_id: binary_sensor.kitchenkickplatetrigger_kickplate_switch
+    from: 'on'
+    to: 'off'
+    id: on_to_off
+    trigger: state
+  - event_type: timer.finished
+    event_data:
+      entity_id: timer.undercabinet_vacuum
+    trigger: event
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: off_to_on
+      sequence:
+      - target:
+          entity_id: switch.shelly1pm_undercab_vacuum
+        action: switch.turn_on
+      - data:
+          entity_id: timer.undercabinet_vacuum
+        action: timer.start
+    - conditions:
+      - condition: trigger
+        id: on_to_off
+      sequence:
+      - data:
+          entity_id: timer.undercabinet_vacuum
+        action: timer.cancel
+      - target:
+          entity_id: switch.shelly1pm_undercab_vacuum
+        action: switch.turn_off
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.event.data.entity_id == ''timer.undercabinet_vacuum''
+          }}'
+      sequence:
+      - target:
+          entity_id: switch.shelly1pm_undercab_vacuum
+        action: switch.turn_off
+  mode: parallel
+- id: '1735571609904'
+  alias: 'BASEMENT: Log Sump Pump Activation Time'
+  description: 'Sets the datetime when the sump pump sensor triggers, is needed for
+    "BASEMENT: Calculate Pump Runtime"'
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.sump_pump_active
+    from: 'off'
+    to: 'on'
+  conditions: []
+  actions:
+  - target:
+      entity_id: input_datetime.sump_pump_last_started
+    data:
+      timestamp: '{{now().timestamp()}}'
+    action: input_datetime.set_datetime
+  mode: single
+- id: '1735572810967'
+  alias: 'BASEMENT: Calculate Pump Runtime'
+  description: "Add new activation duration to both daily and lifetime total pump runtime input_numbers as needed"
+  triggers:
+  - entity_id: binary_sensor.sump_pump_active
+    from: 'on'
+    to: 'off'
+    trigger: state
+  actions:
+  - variables:
+      start_time: '{{ state_attr(''input_datetime.sump_pump_last_started'', ''timestamp'')
+        | float }}'
+      end_time: '{{ now().timestamp() | float }}'
+      runtime: '{{ (end_time - start_time) / 3600 | round(1) }}'
+  - target:
+      entity_id: input_number.sump_pump_last_runtime
+    data:
+      value: '{{ (end_time - start_time) | round(0) }}'
+    action: input_number.set_value
+  - target:
+      entity_id: input_number.sump_pump_total_hrs
+    data:
+      value: '{{ (states(''input_number.sump_pump_total_hrs'') | float) + runtime
+        }}'
+    action: input_number.set_value
+  mode: single
+- id: '1735579149526'
+  alias: 'BASEMENT: Count Sump Pump Activations'
+  description: "If the sump pump activates, increment the daily and lifetime activation input_numbers"
+  triggers:
+  - entity_id: binary_sensor.sump_pump_active
+    from: 'off'
+    to: 'on'
+    trigger: state
+  actions:
+  - target:
+      entity_id: input_number.sump_pump_activations_daily
+    action: input_number.increment
+  - target:
+      entity_id: input_number.sump_pump_lifetime_activations
+    action: input_number.increment
+  mode: single
+- id: '1735579346586'
+  alias: 'BASEMENT: Reset Daily Sump Pump Activations and Runtime'
+  description: "Resets daily pump activations and runtime at midnight"
+  triggers:
+  - at: 00:00:00
+    trigger: time
+  actions:
+  - target:
+      entity_id: input_number.sump_pump_activations_daily
+    data:
+      value: 0
+    action: input_number.set_value
+  - target:
+      entity_id: input_number.sump_pump_runtime_daily
+    data:
+      value: 0
+    action: input_number.set_value
+  mode: single
+- alias: 'BASEMENT: Sump Pump Activation Notification'
+  description: 'Notify phone if sump pump activates'
+  triggers:
+  - entity_id:
+    - binary_sensor.sump_pump_active
+    from: "on"
+    to: "off"
+    trigger: state
+  actions:
+  - delay:
+      seconds: 5
+  - action: notify.mobile_app_stephens_iphone
+    data:
+      title: Basement
+      message: "Sump pump just ran for {{ states('input_number.sump_pump_last_runtime') }} secs"
   mode: single
