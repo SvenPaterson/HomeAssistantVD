@@ -1073,7 +1073,8 @@
   mode: single
 - id: '1735572810967'
   alias: 'BASEMENT: Calculate Pump Runtime'
-  description: "Add new activation duration to both daily and lifetime total pump runtime input_numbers as needed"
+  description: Add new activation duration to both daily and lifetime total pump runtime
+    input_numbers as needed
   triggers:
   - entity_id: binary_sensor.sump_pump_active
     from: 'on'
@@ -1099,7 +1100,8 @@
   mode: single
 - id: '1735579149526'
   alias: 'BASEMENT: Count Sump Pump Activations'
-  description: "If the sump pump activates, increment the daily and lifetime activation input_numbers"
+  description: If the sump pump activates, increment the daily and lifetime activation
+    input_numbers
   triggers:
   - entity_id: binary_sensor.sump_pump_active
     from: 'off'
@@ -1115,7 +1117,7 @@
   mode: single
 - id: '1735579346586'
   alias: 'BASEMENT: Reset Daily Sump Pump Activations and Runtime'
-  description: "Resets daily pump activations and runtime at midnight"
+  description: Resets daily pump activations and runtime at midnight
   triggers:
   - at: 00:00:00
     trigger: time
@@ -1132,12 +1134,12 @@
     action: input_number.set_value
   mode: single
 - alias: 'BASEMENT: Sump Pump Activation Notification'
-  description: 'Notify phone if sump pump activates'
+  description: Notify phone if sump pump activates
   triggers:
   - entity_id:
     - binary_sensor.sump_pump_active
-    from: "on"
-    to: "off"
+    from: 'on'
+    to: 'off'
     trigger: state
   actions:
   - delay:
@@ -1145,5 +1147,22 @@
   - action: notify.mobile_app_stephens_iphone
     data:
       title: Basement
-      message: "Sump pump just ran for {{ states('input_number.sump_pump_last_runtime') }} secs"
+      message: Sump pump just ran for {{ states('input_number.sump_pump_last_runtime')
+        }} secs
+  mode: single
+  id: d887cdb930f94c388634f9a11e92a545
+- id: '1735661280840'
+  alias: 'WEATHER: Update OpenWeatherMap'
+  description: Limits API calls to once every 15mins
+  triggers:
+  - trigger: time_pattern
+    minutes: /15
+  conditions: []
+  actions:
+  - action: homeassistant.update_entity
+    data:
+      entity_id:
+      - weather.openweathermap_forecast
+      entity_globs:
+      - sensor.openweathermap*
   mode: single

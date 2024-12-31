@@ -35,6 +35,7 @@ influxdb:
   include:
     entity_globs:
       - sensor.sump_pump*
+      - sensor.openweathermap*
 
 conversation:
   intents:
