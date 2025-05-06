@@ -57,70 +57,39 @@
         domain: switch
   mode: single
 - id: '1661712457366'
-  alias: 'FRONT YARD: Lights Schedule'
+  alias: Sunrise & Sunset Lights Schedule
   description: ''
-  trigger:
-  - platform: sun
-    event: sunrise
+  triggers:
+  - event: sunrise
     offset: 00:30
     alias: When the sun sets offset by 30
     id: SunUp
-  - platform: sun
-    event: sunset
+    trigger: sun
+  - event: sunset
     offset: '-30'
     id: SunDown
-  condition: []
-  action:
+    trigger: sun
+  conditions: []
+  actions:
   - choose:
     - conditions:
       - condition: trigger
         id: SunUp
       sequence:
-      - service: switch.turn_off
-        data: {}
+      - data: {}
         target:
-          entity_id: switch.outdoor_lights
+          entity_id:
+          - switch.outdoor_lights
+          - switch.tasmota_2
+        action: switch.turn_off
     - conditions:
       - condition: trigger
         id: SunDown
       sequence:
-      - service: switch.turn_on
-        data: {}
+      - data: {}
         target:
           entity_id: switch.outdoor_lights
-  mode: single
-- id: '1673286578742'
-  alias: 'SYSTEM: Govee Low Battery Warning'
-  description: ''
-  trigger:
-  - platform: numeric_state
-    entity_id: sensor.basement_thermohygrometer_battery
-    below: 10
-  - platform: numeric_state
-    entity_id: sensor.guest_room_thermohygrometer_battery
-    below: 10
-  - platform: numeric_state
-    entity_id:
-    - sensor.master_bedroom_thermohygrometer_battery
-    below: 10
-  condition:
-  - condition: time
-    after: '17:00:00'
-    before: '17:30:00'
-    weekday:
-    - sun
-    - mon
-    - tue
-    - wed
-    - thu
-    - sat
-    - fri
-  action:
-  - data:
-      message: Govee ThermoHygrometer Battery is below 10%. Replace batteries soon!
-      title: Low Battery Warning
-      data: {}
-    action: notify.mobile_app_stephens_iphone
+        action: switch.turn_on
   mode: single
 - id: '1673891966542'
   alias: 'FAMILY ROOM: Ping TV'
@@ -193,19 +162,6 @@
           option: Running
         target:
           entity_id: input_select.washing_machine_status
-  mode: single
-- id: '1674347490136'
-  alias: 'ROUTINE: Sunrise'
-  description: Turns on Hall Lamp with Sunrise
-  trigger:
-  - platform: sun
-    event: sunrise
-  condition: []
-  action:
-  - type: turn_on
-    device_id: 61eff37a3d2100574c121b7821b24a1d
-    entity_id: switch.tasmota_2
-    domain: switch
   mode: single
 - id: '1674347540321'
   alias: 'ROUTINE: Goodnight'
@@ -443,35 +399,37 @@
 - id: '1674438847978'
   alias: 'UTILITIES: Water Heater Boost Helper Toggle'
   description: ''
-  trigger:
-  - platform: state
-    entity_id:
+  triggers:
+  - entity_id:
     - water_heater.heat_pump_water_heater
     attribute: operation_mode
     to: high_demand
     id: to_boost
-  - platform: state
-    entity_id:
+    trigger: state
+  - entity_id:
     - water_heater.heat_pump_water_heater
     to: heat_pump
     id: to_normal
-  condition: []
-  action:
+    trigger: state
+  conditions: []
+  actions:
   - choose:
     - conditions:
       - condition: trigger
         id: to_boost
       sequence:
-      - service: input_boolean.turn_on
-        data: {}
+      - data: {}
+        action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.water_heater_boost_mode_helper
     - conditions:
       - condition: trigger
         id: to_normal
       sequence:
-      - service: input_boolean.turn_off
-        data: {}
+      - data: {}
         target:
           entity_id: input_boolean.water_heater_boost_mode_helper
+        action: input_boolean.turn_off
   mode: single
 - id: '1674520573129'
   alias: Guest Location Tracker
@@ -523,41 +481,41 @@
       party_mode: input_boolean.nap_mode
       min_temp: 64
 - id: '1674593635269'
-  alias: 'TIMED TRIGGER: Nap Mode Timer'
+  alias: Nap Mode Logic
   description: Turns nap mode off for 2hrs
-  trigger:
-  - platform: state
-    entity_id:
+  triggers:
+  - entity_id:
     - input_boolean.nap_mode
     from: 'off'
     to: 'on'
     id: nap_mode_triggered
-  - platform: state
-    entity_id:
+    trigger: state
+  - entity_id:
     - input_boolean.nap_mode
     from: 'on'
     to: 'off'
     id: nap_mode_cancelled
-  condition: []
-  action:
+    trigger: state
+  conditions: []
+  actions:
   - choose:
     - conditions:
       - condition: trigger
         id: nap_mode_triggered
       sequence:
-      - service: timer.start
-        data: {}
+      - data: {}
         target:
           entity_id: timer.nap_mode_timer
+        action: timer.start
       - wait_for_trigger:
-        - platform: state
-          entity_id:
+        - entity_id:
           - timer.nap_mode_timer
           to: idle
-      - service: input_boolean.turn_off
-        data: {}
+          trigger: state
+      - data: {}
         target:
           entity_id: input_boolean.nap_mode
+        action: input_boolean.turn_off
     - conditions:
       - condition: trigger
         id: nap_mode_cancelled
@@ -565,10 +523,10 @@
         entity_id: timer.nap_mode_timer
         state: active
       sequence:
-      - service: timer.cancel
-        data: {}
+      - data: {}
         target:
           entity_id: timer.nap_mode_timer
+        action: timer.cancel
   mode: parallel
 - id: '1687015242883'
   alias: 'OFFICE: AC & HT'
@@ -817,35 +775,6 @@
         entity_id: eff5b741e3dbb05ef4230bf55183d628
         domain: switch
   mode: single
-- id: '1705686016456'
-  alias: 'OFFICE: AppleTV Turn ON'
-  description: will turn on the marantz receiver and switch to correct input
-  trigger:
-  - platform: state
-    entity_id:
-    - media_player.apple_tv
-    from: standby
-  - platform: state
-    entity_id:
-    - media_player.apple_tv
-    from: idle
-  condition: []
-  action:
-  - service: media_player.turn_on
-    target:
-      device_id: 2cb05ea25c946bf67aaab462a36a5ba2
-    data: {}
-  - service: denonavr.get_command
-    target:
-      device_id: 2cb05ea25c946bf67aaab462a36a5ba2
-    data:
-      command: /goform/formiPhoneAppDirect.xml?SIMPLAY
-  - service: denonavr.get_command
-    target:
-      device_id: 2cb05ea25c946bf67aaab462a36a5ba2
-    data:
-      command: /goform/formiPhoneAppDirect.xml?MV50
-  mode: single
 - id: '1726002348254'
   alias: 'BASEMENT: Water Leak Detected'
   description: What will happen if water is detected in the basement
@@ -946,7 +875,7 @@
     action: notify.mobile_app_stephens_iphone
   mode: single
 - id: '1734216548855'
-  alias: Family Room Light Switch
+  alias: 'LIGHT SWITCH: Family Room Main Lights'
   description: Custom behavior of family room light switch
   use_blueprint:
     path: homeassistant/zen74_scene_control.yaml
@@ -1029,8 +958,9 @@
         id: off_to_on
       sequence:
       - target:
-          entity_id: switch.shelly1pm_undercab_vacuum
+          entity_id: switch.kitchen_vacuum_power
         action: switch.turn_on
+        data: {}
       - data:
           entity_id: timer.undercabinet_vacuum
         action: timer.start
@@ -1042,16 +972,18 @@
           entity_id: timer.undercabinet_vacuum
         action: timer.cancel
       - target:
-          entity_id: switch.shelly1pm_undercab_vacuum
+          entity_id: switch.kitchen_vacuum_power
         action: switch.turn_off
+        data: {}
     - conditions:
       - condition: template
         value_template: '{{ trigger.event.data.entity_id == ''timer.undercabinet_vacuum''
           }}'
       sequence:
       - target:
-          entity_id: switch.shelly1pm_undercab_vacuum
+          entity_id: switch.kitchen_vacuum_power
         action: switch.turn_off
+        data: {}
   mode: parallel
 - id: '1735571609904'
   alias: 'BASEMENT: Log Sump Pump Activation Time'
@@ -1151,18 +1083,54 @@
         }} secs
   mode: single
   id: d887cdb930f94c388634f9a11e92a545
-- id: '1735661280840'
-  alias: 'WEATHER: Update OpenWeatherMap'
-  description: Limits API calls to once every 15mins
+- id: '1745068099603'
+  alias: 'FAMILY ROOM: Camera Privacy Mode Timer'
+  description: ''
   triggers:
-  - trigger: time_pattern
-    minutes: /15
+  - trigger: state
+    entity_id:
+    - switch.amcrest_camera_privacy_mode
+    from: 'on'
+    to: 'off'
   conditions: []
   actions:
-  - action: homeassistant.update_entity
-    data:
-      entity_id:
-      - weather.openweathermap_forecast
-      entity_globs:
-      - sensor.openweathermap*
+  - delay:
+      hours: 0
+      minutes: 2
+      seconds: 0
+      milliseconds: 0
+  - action: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.amcrest_camera_privacy_mode
+  mode: restart
+- id: reset_watered_recently
+  alias: 'BACKYARD: Reset ''watered_recently'' after 3 days'
+  description: ''
+  triggers:
+  - entity_id: input_boolean.watered_recently
+    to: 'on'
+    for:
+      days: 3
+    trigger: state
+  actions:
+  - target:
+      entity_id: input_boolean.watered_recently
+    action: input_boolean.turn_off
+    data: {}
+  mode: queued
+- id: mark_lawn_watered_via_notification
+  alias: 'ALERT: Mobile action – Set watered_recently'
+  description: ''
+  triggers:
+  - event_type: mobile_app_notification_action
+    event_data:
+      action: WATERED
+    trigger: event
+  actions:
+  - target:
+      entity_id: input_boolean.watered_recently
+    action: input_boolean.turn_on
+    data: {}
   mode: single

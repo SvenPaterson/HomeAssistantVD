@@ -1,0 +1,33 @@
+low_battery:
+  name: A device has low battery
+  done_message: clear_notification
+  entity_id: binary_sensor.device_with_low_battery
+  state: "on"
+  repeat: 60
+  can_acknowledge: true
+  skip_first: false
+  notifiers:
+    - mobile_app_stephens_iphone
+  data:
+    message: "A device has low battery"
+    title: "Low Battery Alert"
+    tag: "low-battery"
+    actions:
+      - action: "URI"
+        title: "Check Status"
+        uri: "/system-status/battery-levels"
+
+irrigation_needed:
+  name: "Irrigation Needed – <1″ Rain, 7‑day Heat, Dry Forecast"
+  entity_id: binary_sensor.irrigation_needed_condition
+  state: "on"
+  repeat:
+    - 1440 # every 24 h until acknowledged or condition clears
+  can_acknowledge: true
+  skip_first: false
+  notifiers:
+    - mobile_app_stephens_iphone
+  data:
+    actions:
+      - action: WATERED
+        title: "I watered the lawn"

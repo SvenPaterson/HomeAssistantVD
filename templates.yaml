@@ -1,28 +1,91 @@
-sensor:
-  - name: "Sump Pump Activations Daily"
-    state: "{{ states('input_number.sump_pump_activations_daily') }}"
-    unit_of_measurement: "#"
-    icon: mdi:counter
+# Template sensors for tracking the sump pump activations
+- sensor:
+    - name: "Sump Pump Activations Daily"
+      state: "{{ states('input_number.sump_pump_activations_daily') }}"
+      unit_of_measurement: "num"
+      icon: mdi:counter
 
-  - name: "Sump Pump Lifetime Activations"
-    state: "{{ states('input_number.sump_pump_lifetime_activations') }}"
-    unit_of_measurement: "#"
-    icon: mdi:counter
+    - name: "Sump Pump Lifetime Activations"
+      state: "{{ states('input_number.sump_pump_lifetime_activations') }}"
+      unit_of_measurement: "num"
+      icon: mdi:counter
 
-  - name: "Sump Pump Runtime Daily"
-    state: "{{ states('input_number.sump_pump_runtime_daily') }}"
-    unit_of_measurement: "s"
-    icon: mdi:timer
+    - name: "Sump Pump Runtime Daily"
+      state: "{{ states('input_number.sump_pump_runtime_daily') }}"
+      unit_of_measurement: "s"
+      icon: mdi:timer
 
-  - name: "Sump Pump Total Hours"
-    state: "{{ states('input_number.sump_pump_total_hrs') }}"
-    unit_of_measurement: "hrs"
-    icon: mdi:clock
+    - name: "Sump Pump Total Hours"
+      state: "{{ states('input_number.sump_pump_total_hrs') }}"
+      unit_of_measurement: "hrs"
+      icon: mdi:clock
 
-  - name: "Sump Pump Average Duration Per Activation"
-    state: >
-      {% set activations = states('input_number.sump_pump_activations_daily') | float %}
-      {% set runtime = states('input_number.sump_pump_runtime_daily') | float %}
-      {{ (runtime / activations) if activations > 0 else 0 }}
-    unit_of_measurement: "s"
-    icon: mdi:timer
+    - name: "Sump Pump Average Duration Per Activation"
+      state: >
+        {% set activations = states('input_number.sump_pump_activations_daily') | float %}
+        {% set runtime = states('input_number.sump_pump_runtime_daily') | float %}
+        {{ (runtime / activations) if activations > 0 else 0 }}
+      unit_of_measurement: "s"
+      icon: mdi:timer
+
+- binary_sensor:
+    # For Govee bluetooth thermohygrometer battery level alert
+    - name: "Device With Low Battery"
+      state: >
+        {{
+          [
+            states('sensor.basement_thermohygrometer_battery')|float(default=0),
+            states('sensor.guest_room_thermohygrometer_battery')|float(default=0),
+            states('sensor.master_bedroom_thermohygrometer_battery')|float(default=0)
+          ]
+          | select('lt', 15)
+          | list
+          | length > 0
+        }}
+      device_class: battery
+      icon: mdi:battery
+
+    ### FOR IRRIGATION ALERT ###
+    # 1. Current-day “hot” flag
+    - name: hot_day
+      unique_id: bs_hot_day
+      state: "{{ states('sensor.home_hvac_outdoor_temperature')|float(0) >= 80 }}"
+      device_class: heat
+
+    # 2. 7-day rain deficit (< 1 in)
+    - name: weekly_rain_below_target
+      unique_id: bs_weekly_rain_deficit
+      state: >
+        {% set v = states('sensor.rain_past_7_days_in') %}
+        {{ v not in ['unknown','unavailable','none'] and v|float < 1.0 }}
+      icon: mdi:weather-rainy
+
+    # 3. All seven of last seven days hit ≥ 80 °F
+    - name: hot_streak_last_7_days
+      unique_id: bs_hot_streak_7
+      state: "{{ states('sensor.hot_days_last_7')|int(0) >= 7 }}"
+      icon: mdi:thermometer-high
+
+    # 4. No precip in next 3 daily forecasts
+    - name: no_rain_next_3_days
+      unique_id: bs_no_rain_next3
+      state: >
+        {% set fc = state_attr('weather.openweathermap_forecast','forecast') or [] %}
+        {% set next3 = fc[:3] %}
+        {% set precip_flag = next3 | selectattr('precipitation','defined')
+                                  | selectattr('precipitation','>',0) | list %}
+        {% set condition_flag = next3 | selectattr('condition','match',
+                  'rain|snow|hail|lightning') | list %}
+        {{ (precip_flag|length == 0) and (condition_flag|length == 0) }}
+      icon: mdi:weather-sunny-off
+
+    # 5. Final irrigation-needed condition
+    - name: irrigation_needed_condition
+      unique_id: bs_irrigation_needed
+      state: >
+        {{ is_state('binary_sensor.weekly_rain_below_target','on')
+            and is_state('binary_sensor.hot_streak_last_7_days','on')
+            and is_state('binary_sensor.no_rain_next_3_days','on')
+            and is_state('input_boolean.watered_recently','off') }}
+      icon: mdi:grass
+    ### IRRIGATION ALERT END ###

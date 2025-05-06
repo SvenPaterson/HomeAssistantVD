@@ -1,0 +1,4 @@
+# keeps track of whether the grass has been watered
+watered_recently:
+  name: "Lawn watered (last 3 days)"
+  icon: mdi:sprinkler-variant

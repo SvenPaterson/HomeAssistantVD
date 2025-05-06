@@ -1,0 +1,4 @@
+streams:
+  livingn_room_cam:
+    - rtsp://admin:Vourch21@192.168.1.71:554/cam/realmonitor?channel=1&subtype=0
+    - ffmpeg:talk

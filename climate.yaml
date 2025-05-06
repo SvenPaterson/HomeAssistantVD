@@ -23,7 +23,7 @@
   name: Master Bedroom Heater
   heater: switch.shelly1pm_master_bedroom
   target_sensor: sensor.master_bedroom_thermohygrometer_temperature
-  min_temp: 65
+  min_temp: 60
   max_temp: 80
   initial_hvac_mode: "off"
   min_cycle_duration:

@@ -1,0 +1,37 @@
+# size of Maria DB
+- platform: sql
+  db_url: !secret mariadb_url
+  queries:
+    - name: MariaDB Size
+      query: "SELECT table_schema AS 'database', ROUND(SUM(data_length + index_length) / 1024 / 1024, 1) AS 'size' FROM information_schema.TABLES WHERE table_schema = 'homeassistant' GROUP BY table_schema;"
+      column: "size"
+      unit_of_measurement: "MB"
+
+
+# A. Integrate OWM rain-rate (in/hr) → cumulative depth (in)
+- platform: integration
+  name: rain_cumulative_in
+  unique_id: int_rain_cumulative
+  source: sensor.openweathermap_current_rain   # in/hr, updates ≈10 min
+  method: trapezoidal
+  unit_time: h                                 # keep unit = inches
+
+# B. 7-day rainfall = change in cumulative over sliding 7 days
+- platform: statistics
+  name: rain_past_7_days_in
+  unique_id: st_rain_7
+  entity_id: sensor.rain_cumulative_in
+  state_characteristic: change                 # first → last sample diff
+  max_age:
+    days: 7
+
+# C. Count of hot days (≥ 80 °F) in past 7 days
+- platform: history_stats
+  name: hot_days_last_7
+  unique_id: hs_hot_days_7
+  entity_id: binary_sensor.hot_day
+  state: "on"
+  type: count
+  end: "{{ now() }}"
+  duration:
+    days: 7

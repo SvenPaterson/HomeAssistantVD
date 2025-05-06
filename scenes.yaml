@@ -1,39 +1,20 @@
+# scenes.yaml
 - id: '1703422760932'
   name: All Downstairs Lights Off
-  entities:
-    switch.tasmota_2:
-      friendly_name: S31_6_HallLamp Hall Lamp
-      state: 'off'
-    switch.family_room_sound_bar:
-      icon: mdi:floor-lamp
-      friendly_name: S31_5_DiningRoomLamp Dining Room Lamp
-      state: 'off'
-    switch.tasmota_3:
-      friendly_name: S31_7_LivingRoomLamp Living Room Lamp
-      state: 'off'
-    switch.s31_8_livingroomlamp_living_room_lamp:
-      friendly_name: S31_8_LivingRoomLamp Living Room Lamp
-      state: 'off'
-    switch.dining_room_shelf_lights:
-      icon: mdi:lamps-outline
-      friendly_name: S31_4_DiningRoomSelfLights Dining Room Shelf Lights
-      state: 'off'
-    switch.s31_9_livingroomlamp_living_room_lamp:
-      friendly_name: S31_9_LivingRoomLamp Living Room Lamp
-      state: 'off'
-    switch.tasmota_4:
-      friendly_name: S31_10_LivingRoomLamp Living Room Lamp
-      state: 'off'
-    light.family_room_lights:
-      supported_color_modes:
-      - brightness
-      color_mode: brightness
-      brightness: 3
-      friendly_name: 'Family Room Lights '
-      supported_features: 32
-      state: 'off'
   icon: mdi:lightbulb-group-off-outline
-  metadata: {}
+  entities:
+    switch.backyard_landscape_lights:          off
+    switch.tasmota_2:                          off
+    switch.family_room_sound_bar:              off
+    switch.tasmota_3:                          off
+    switch.s31_8_livingroomlamp_living_room_lamp: off
+    switch.dining_room_shelf_lights:           off
+    switch.s31_9_livingroomlamp_living_room_lamp: off
+    switch.tasmota_4:                          off
+    light.family_room_lights:
+      state: 'off'
+      brightness: 1            # optional: ensures lights don’t power-up bright
+
 - id: '1726144246562'
   name: Important Announcement Volume
   entities:
