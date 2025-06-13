@@ -1,0 +1,73 @@
+start_kids_wifi_timer:
+  alias: Start Kids WiFi Timer
+  mode: single
+  fields:
+    minutes:
+      description: "Duration in minutes"
+      example: "15"
+  sequence:
+    - service: timer.start
+      data:
+        entity_id: timer.kids_wifi_timer
+        duration:
+          minutes: "{{ minutes }}"
+
+cancel_kids_wifi_timer:
+  alias: Cancel Kids WiFi Timer + Block
+  mode: single
+  sequence:
+    - service: timer.cancel
+      target:
+        entity_id: timer.kids_wifi_timer
+
+toggle_kids_wifi_timer_pause:
+  alias: Toggle Kids WiFi Timer Pause
+  mode: single
+  sequence:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: timer.kids_wifi_timer
+              state: "active"
+          sequence:
+            - service: timer.pause
+              target:
+                entity_id: timer.kids_wifi_timer
+        - conditions:
+            - condition: state
+              entity_id: timer.kids_wifi_timer
+              state: "paused"
+          sequence:
+            - service: timer.start
+              target:
+                entity_id: timer.kids_wifi_timer
+
+extend_kids_wifi_timer:
+  alias: Extend Kids WiFi Timer by 15 Minutes
+  mode: single
+  sequence:
+    - condition: state
+      entity_id: timer.kids_wifi_timer
+      state:
+        - "active"
+        - "paused"
+    - service: timer.start
+      data:
+        entity_id: timer.kids_wifi_timer
+        duration: >
+          {% if is_state('timer.kids_wifi_timer', 'active') %}
+            {% set finishes = state_attr('timer.kids_wifi_timer', 'finishes_at') %}
+            {% set finish_time = as_timestamp(finishes) %}
+            {% set current_time = as_timestamp(now()) %}
+            {% set seconds_left = finish_time - current_time %}
+            {{ (seconds_left + 900) | int }}
+          {% else %}
+            {% set remaining = state_attr('timer.kids_wifi_timer', 'remaining') %}
+            {% if remaining %}
+              {% set parts = remaining.split(':') %}
+              {% set seconds = parts[0]|int * 3600 + parts[1]|int * 60 + parts[2]|int %}
+              {{ seconds + 900 }}
+            {% else %}
+              900
+            {% endif %}
+          {% endif %}

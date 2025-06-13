@@ -2,3 +2,6 @@
 watered_recently:
   name: "Lawn watered (last 3 days)"
   icon: mdi:sprinkler-variant
+
+test_override_irrigation:
+  name: "Test - Override Irrigation Alert"

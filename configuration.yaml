@@ -9,6 +9,7 @@ template: !include templates.yaml
 alert: !include alerts.yaml
 input_boolean: !include input_booleans.yaml
 input_number: !include input_numbers.yaml
+notify: !include notify.yaml
 
 # Loads default set of integrations. Do not remove.
 default_config:

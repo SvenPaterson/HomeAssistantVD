@@ -1,0 +1,5 @@
+- name: parents_phones
+  platform: group
+  services:
+    - service: mobile_app_stephens_iphone
+    - service: mobile_app_iphone_2  # Will update this after renaming

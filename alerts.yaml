@@ -17,17 +17,56 @@ low_battery:
         title: "Check Status"
         uri: "/system-status/battery-levels"
 
+
 irrigation_needed:
-  name: "Irrigation Needed – <1″ Rain, 7‑day Heat, Dry Forecast"
+  name: Lawn Irrigation Needed
+  title: "🌱 Lawn Needs Water"
+  message: >
+    Irrigation Needed
+    
+    Rain Last 7: {{ states('sensor.rain_in_past_7_days')|float(0)|round(2) }}"
+    Rain Next 3: {{ states('sensor.rain_next_3_days_in')|float(0)|round(2) }}"
+  done_message: "Irrigation alert cleared"
   entity_id: binary_sensor.irrigation_needed_condition
   state: "on"
-  repeat:
-    - 1440 # every 24 h until acknowledged or condition clears
+  repeat: 
+    - 360   # 6 hours
+    - 720   # 12 hours  
+    - 1440  # Then daily
   can_acknowledge: true
   skip_first: false
   notifiers:
-    - mobile_app_stephens_iphone
+    - mobile_app_your_phone  # Replace with your notifier
+  data:
+    tag: "irrigation-alert"
+    group: "irrigation"
+    color: "#2E7D32"
+    notification_icon: "mdi:grass"
+    actions:
+      - action: "WATERED"
+        title: "✅ Watered"
+      - action: "ACKNOWLEDGE"
+        title: "🔕 Acknowledge"
+
+# in the future - implement automatic watering with sprinklers
+# could even use soil moister level with a probe
+
+hot_water_temperature_low:
+  name: Hot Water Temperature Low
+  entity_id: binary_sensor.hot_water_low_temperature
+  state: "on"
+  repeat:
+    - 30
+    - 60
+  can_acknowledge: true
+  skip_first: false
+  notifiers:
+    - parents_phones  # Uncomment when ready
+  title: "Hot Water Temperature Low"
+  message: "Water temperature: ({{ states('sensor.econet_hpwh_upper_tank_temperature') }}°F). Would you like to turn on Boost Mode?"
   data:
     actions:
-      - action: WATERED
-        title: "I watered the lawn"
+      - action: "ENABLE_HOT_WATER_BOOST"
+        title: "Turn on Boost Mode"
+      - action: "DISMISS_HOT_WATER_ALERT"
+        title: "Dismiss"

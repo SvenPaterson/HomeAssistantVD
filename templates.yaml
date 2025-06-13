@@ -45,47 +45,81 @@
       device_class: battery
       icon: mdi:battery
 
-    ### FOR IRRIGATION ALERT ###
-    # 1. Current-day “hot” flag
-    - name: hot_day
-      unique_id: bs_hot_day
-      state: "{{ states('sensor.home_hvac_outdoor_temperature')|float(0) >= 80 }}"
+### IRRIGATION ALERT ###
+    # 1. Current-day "hot" flag
+    - name: "Hot Day 24h Max 80F"
+      unique_id: bs_hot_day_daily
+      state: "{{ states('sensor.outdoor_temp_max_24h')|float(0) >= 80 }}"
       device_class: heat
 
-    # 2. 7-day rain deficit (< 1 in)
-    - name: weekly_rain_below_target
+    # 2. 7-day rain deficit (< 0.5 in)
+    - name: "Weekly Rain Below Target"
       unique_id: bs_weekly_rain_deficit
       state: >
-        {% set v = states('sensor.rain_past_7_days_in') %}
-        {{ v not in ['unknown','unavailable','none'] and v|float < 1.0 }}
+        {% set v = states('sensor.rain_in_past_7_days') %}
+        {{ v not in ['unknown','unavailable','none'] and v|float < 0.5 }}
       icon: mdi:weather-rainy
 
-    # 3. All seven of last seven days hit ≥ 80 °F
-    - name: hot_streak_last_7_days
-      unique_id: bs_hot_streak_7
-      state: "{{ states('sensor.hot_days_last_7')|int(0) >= 7 }}"
-      icon: mdi:thermometer-high
+    # 3. All of last 3 days hit ≥ 80 °F
+    - name: "Hot Streak Last 3 Days"
+      unique_id: bs_hot_streak_3
+      state: >
+        {{ states('sensor.hot_days_last_3')|int(0) >= 3 }}
+      icon: mdi:sun-thermometer
 
-    # 4. No precip in next 3 daily forecasts
-    - name: no_rain_next_3_days
+    # 4. No precip in next 3 days
+    - name: "No Rain Next 3 Days"
       unique_id: bs_no_rain_next3
       state: >
-        {% set fc = state_attr('weather.openweathermap_forecast','forecast') or [] %}
-        {% set next3 = fc[:3] %}
-        {% set precip_flag = next3 | selectattr('precipitation','defined')
-                                  | selectattr('precipitation','>',0) | list %}
-        {% set condition_flag = next3 | selectattr('condition','match',
-                  'rain|snow|hail|lightning') | list %}
-        {{ (precip_flag|length == 0) and (condition_flag|length == 0) }}
-      icon: mdi:weather-sunny-off
+        {{ states('sensor.rain_next_3_days_in')|float(1) < 0.1 }}
+      icon: mdi:white-balance-sunny
 
-    # 5. Final irrigation-needed condition
-    - name: irrigation_needed_condition
+    # 5. Final irrigation alert condition
+    - name: "Irrigation Needed Condition"
       unique_id: bs_irrigation_needed
       state: >
-        {{ is_state('binary_sensor.weekly_rain_below_target','on')
-            and is_state('binary_sensor.hot_streak_last_7_days','on')
-            and is_state('binary_sensor.no_rain_next_3_days','on')
-            and is_state('input_boolean.watered_recently','off') }}
-      icon: mdi:grass
-    ### IRRIGATION ALERT END ###
+        {{
+          is_state('input_boolean.test_override_irrigation', 'on') or
+          (
+            is_state('binary_sensor.weekly_rain_below_target', 'on') and
+            is_state('binary_sensor.hot_streak_last_3_days', 'on') and
+            is_state('binary_sensor.no_rain_next_3_days', 'on') and
+            is_state('input_boolean.watered_recently', 'off')
+          )
+        }}
+### END IRRIGATION ###
+
+    - name: "Hot Water Low Temperature"
+      state: >
+        {{ states('sensor.econet_hpwh_upper_tank_temperature') | float(0) < 110 }}
+      device_class: problem
+
+    - name: "Kids WiFi 5 Min Warning"
+      state: >
+        {% if is_state('timer.kids_wifi_timer', 'active') %}
+          {% set finishes = state_attr('timer.kids_wifi_timer', 'finishes_at') %}
+          {% if finishes %}
+            {% set finish_time = as_timestamp(finishes) %}
+            {% set current_time = as_timestamp(now()) %}
+            {% set seconds_left = finish_time - current_time %}
+            {{ 270 <= seconds_left <= 330 }}
+          {% else %}
+            false
+          {% endif %}
+        {% else %}
+          false
+        {% endif %}
+      attributes:
+        seconds_remaining: >
+          {% if is_state('timer.kids_wifi_timer', 'active') %}
+            {% set finishes = state_attr('timer.kids_wifi_timer', 'finishes_at') %}
+            {% if finishes %}
+              {% set finish_time = as_timestamp(finishes) %}
+              {% set current_time = as_timestamp(now()) %}
+              {{ (finish_time - current_time) | int }}
+            {% else %}
+              0
+            {% endif %}
+          {% else %}
+            0
+          {% endif %}

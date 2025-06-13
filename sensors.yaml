@@ -12,26 +12,48 @@
 - platform: integration
   name: rain_cumulative_in
   unique_id: int_rain_cumulative
-  source: sensor.openweathermap_current_rain   # in/hr, updates ≈10 min
+  source: sensor.openweathermap_current_rain
   method: trapezoidal
-  unit_time: h                                 # keep unit = inches
+  unit_time: h
 
 # B. 7-day rainfall = change in cumulative over sliding 7 days
 - platform: statistics
-  name: rain_past_7_days_in
+  name: "Rain in Past 7 Days"  # Simplified name
   unique_id: st_rain_7
   entity_id: sensor.rain_cumulative_in
-  state_characteristic: change                 # first → last sample diff
+  state_characteristic: change
   max_age:
     days: 7
 
-# C. Count of hot days (≥ 80 °F) in past 7 days
+# C. Track today's daily max temperature    
+- platform: statistics
+  name: "Outdoor Temp Max 24h"  # Simplified name
+  unique_id: st_outdoor_max_24h
+  entity_id: sensor.home_hvac_outdoor_temperature
+  state_characteristic: value_max
+  max_age:
+    hours: 24
+
+# D. Sum of next‑3‑day forecast accumulation
+- platform: template
+  sensors:
+    rain_next_3_days_in:
+      friendly_name: "Rain Next 3 Days In"
+      unit_of_measurement: "in"
+      value_template: >
+        {{ (
+          states('sensor.pirateweather_precip_accumulation_1d')|float(0) +
+          states('sensor.pirateweather_precip_accumulation_2d')|float(0) +
+          states('sensor.pirateweather_precip_accumulation_3d')|float(0)
+        ) | round(2) }}
+
+# E. Count of hot days (≥ 80 °F) in past 3 days
 - platform: history_stats
-  name: hot_days_last_7
-  unique_id: hs_hot_days_7
-  entity_id: binary_sensor.hot_day
+  name: "Hot Days Last 3"
+  unique_id: hs_hot_days_3
+  entity_id: binary_sensor.hot_day_24h_max_80f
   state: "on"
   type: count
   end: "{{ now() }}"
   duration:
-    days: 7
+    days: 3
