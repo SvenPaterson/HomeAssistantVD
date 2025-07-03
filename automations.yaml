@@ -24,7 +24,6 @@
     entity_id: alarm_control_panel.4216_victoria_dr_alarm_control_panel_alarm_control_panel
     type: arm_home
   mode: single
-  
 - id: '1661019086429'
   alias: 'SCHEDULE: Mushroom Grow Light'
   description: ''
@@ -57,7 +56,6 @@
         entity_id: switch.shellyplugus_083af20077a4_switch_0
         domain: switch
   mode: single
-
 - id: '1661712457366'
   alias: Sunrise & Sunset Lights Schedule
   description: ''
@@ -93,7 +91,6 @@
           entity_id: switch.outdoor_lights
         action: switch.turn_on
   mode: single
-
 - id: '1673891966542'
   alias: 'FAMILY ROOM: Ping TV'
   description: ''
@@ -109,7 +106,6 @@
     data:
       message: Mummy and Daddy Love You!
   mode: single
-
 - id: '1674314800351'
   alias: 'LAUNDRY: Washing Machine Status'
   description: Logic to determine current status of washing machine based on power
@@ -167,7 +163,6 @@
         target:
           entity_id: input_select.washing_machine_status
   mode: single
-
 - id: '1674347540321'
   alias: 'ROUTINE: Goodnight'
   description: Turns off lights when Alarm is armed to Home mode
@@ -184,7 +179,6 @@
       entity_id: scene.lights_off
     metadata: {}
   mode: single
-
 - id: '1674405833015'
   alias: 'LAUNDRY: Washing Machine Completed Notification'
   description: ''
@@ -213,7 +207,6 @@
         message: Washing machine is finished!
       action: notify.family_room_lgtv
   mode: single
-
 - id: '1674418857081'
   alias: Home Status Logic
   description: Logic to determine current status of home based on occupancy and alarm
@@ -257,7 +250,6 @@
         target:
           entity_id: input_select.house_status
   mode: single
-
 - id: '1674420171955'
   alias: Home Status Actions
   description: What happens when we all come and go from the house
@@ -302,7 +294,6 @@
           - climate.master_bedroom_heater
           - climate.guest_room
   mode: single
-
 - id: '1674421594354'
   alias: 'DEBUG: Test Lab'
   description: ''
@@ -337,7 +328,6 @@
     data:
       message: will remind you again in 30mins to get laundry
   mode: single
-
 - id: '1674435262405'
   alias: 'UTILITIES: Hot Water Boost'
   description: ''
@@ -406,7 +396,6 @@
           entity_id: timer.hot_water_boost_mode_timer
         action: timer.cancel
   mode: parallel
-
 - id: '1674438847978'
   alias: 'UTILITIES: Water Heater Boost Helper Toggle'
   description: ''
@@ -442,7 +431,6 @@
           entity_id: input_boolean.water_heater_boost_mode_helper
         action: input_boolean.turn_off
   mode: single
-
 - id: '1674520573129'
   alias: Guest Location Tracker
   description: sets the guest users location to home if toggled on and vice versa
@@ -476,7 +464,6 @@
           dev_id: guest
           location_name: not_home
   mode: single
-
 - id: '1674571299634'
   alias: 'MASTER BEDROOM: Heater Schedule'
   description: ''
@@ -493,7 +480,6 @@
       winter_mode: input_boolean.winter_mode
       party_mode: input_boolean.nap_mode
       min_temp: 64
-
 - id: '1674593635269'
   alias: Nap Mode Logic
   description: Turns nap mode off for 2hrs
@@ -542,7 +528,6 @@
           entity_id: timer.nap_mode_timer
         action: timer.cancel
   mode: parallel
-
 - id: '1687015242883'
   alias: 'OFFICE: AC & HT'
   description: will turn on office AC with home theater depending on the temperature
@@ -591,7 +576,6 @@
         target:
           entity_id: climate.office_window_ac
   mode: single
-
 - id: '1687712963822'
   alias: 'GUEST ROOM: Climate Trigger'
   description: ''
@@ -665,7 +649,6 @@
         target:
           entity_id: climate.guest_room
   mode: single
-
 - id: '1691366909652'
   alias: 'GUEST ROOM: Smart Charge Moto X4'
   description: ''
@@ -710,7 +693,6 @@
           entity_id: counter.motox4_charge_cycles
         action: counter.increment
   mode: single
-
 - id: '1691793928348'
   alias: 'MASTER BEDROOM: Winter Mode Control'
   description: Control outlet behavior based on winter mode state, with heating schedule
@@ -744,57 +726,6 @@
         target:
           device_id: bf02543848006e26fe21c8652c3c4efa
   mode: single
-
-- id: '1703423323385'
-  alias: 'LIVINGROOM: Hi Fi Power'
-  description: Will turn on and off the hifi if chromecast is playing music or in
-    standby
-  triggers:
-  - entity_id:
-    - media_player.chromecastaudio6350
-    from:
-    to: playing
-    id: Music Playing
-    trigger: state
-  - entity_id:
-    - media_player.chromecastaudio6350
-    from:
-    to: idle
-    id: Music Stopped
-    trigger: state
-    for: 00:00:05
-  - entity_id:
-    - media_player.chromecastaudio6350
-    from:
-    to: 'off'
-    id: Turns Off
-    trigger: state
-  conditions: []
-  actions:
-  - choose:
-    - conditions:
-      - condition: trigger
-        id:
-        - Music Playing
-      sequence:
-      - type: turn_on
-        device_id: 86db6e60ff14c3daf2aa2ee9113f7d34
-        entity_id: eff5b741e3dbb05ef4230bf55183d628
-        domain: switch
-    - conditions:
-      - condition: or
-        conditions:
-        - condition: trigger
-          id:
-          - Music Stopped
-          - Turns Off
-      sequence:
-      - type: turn_off
-        device_id: 86db6e60ff14c3daf2aa2ee9113f7d34
-        entity_id: eff5b741e3dbb05ef4230bf55183d628
-        domain: switch
-  mode: single
-
 - id: '1726002348254'
   alias: 'BASEMENT: Water Leak Detected'
   description: What will happen if water is detected in the basement
@@ -866,7 +797,6 @@
       entity_id: scene.return_to_normal_volume
     data: {}
   mode: single
-
 - id: '1726002967988'
   alias: 'SYSTEM: Water Tank Sensor Low Batt'
   description: ''
@@ -895,7 +825,6 @@
       data: {}
     action: notify.mobile_app_stephens_iphone
   mode: single
-
 - id: '1734216548855'
   alias: 'LIGHT SWITCH: Family Room Main Lights'
   description: Custom behavior of family room light switch
@@ -954,7 +883,6 @@
           media_content_type: video/youtube
         target:
           device_id: cf7b3db23bee241e5f72697693f247d2
-
 - id: '1735251248014'
   alias: 'BASEMENT: Kitchen Undercabinet Vacuum'
   description: ''
@@ -1008,7 +936,6 @@
         action: switch.turn_off
         data: {}
   mode: parallel
-
 - id: '1735571609904'
   alias: 'BASEMENT: Log Sump Pump Activation Time'
   description: 'Sets the datetime when the sump pump sensor triggers, is needed for
@@ -1027,7 +954,6 @@
       timestamp: '{{now().timestamp()}}'
     action: input_datetime.set_datetime
   mode: single
-
 - id: '1735572810967'
   alias: 'BASEMENT: Calculate Pump Runtime'
   description: Add new activation duration to both daily and lifetime total pump runtime
@@ -1055,7 +981,6 @@
         }}'
     action: input_number.set_value
   mode: single
-
 - id: '1735579149526'
   alias: 'BASEMENT: Count Sump Pump Activations'
   description: If the sump pump activates, increment the daily and lifetime activation
@@ -1073,7 +998,6 @@
       entity_id: input_number.sump_pump_lifetime_activations
     action: input_number.increment
   mode: single
-
 - id: '1735579346586'
   alias: 'BASEMENT: Reset Daily Sump Pump Activations and Runtime'
   description: Resets daily pump activations and runtime at midnight
@@ -1092,7 +1016,6 @@
       value: 0
     action: input_number.set_value
   mode: single
-
 - alias: 'BASEMENT: Sump Pump Activation Notification'
   description: Notify phone if sump pump activates
   triggers:
@@ -1111,7 +1034,6 @@
         }} secs
   mode: single
   id: d887cdb930f94c388634f9a11e92a545
-
 - id: '1745068099603'
   alias: 'FAMILY ROOM: Camera Privacy Mode Timer'
   description: ''
@@ -1134,7 +1056,6 @@
     target:
       entity_id: switch.amcrest_camera_privacy_mode
   mode: restart
-
 - id: mark_lawn_watered_via_alert
   alias: 'ALERT: Process watered action from notification'
   triggers:
@@ -1151,9 +1072,8 @@
       entity_id: alert.irrigation_needed
   - service: notify.mobile_app_stephens_iphone
     data:
-      message: "✅ Marked as watered - alert cleared for 3 days"
-      tag: "irrigation-alert"  # Replaces the alert notification
-
+      message: ✅ Marked as watered - alert cleared for 3 days
+      tag: irrigation-alert
 - id: reset_watered_recently
   alias: 'BACKYARD: Reset ''watered_recently'' after 3 days'
   description: ''
@@ -1169,161 +1089,258 @@
     action: input_boolean.turn_off
     data: {}
   mode: queued
-
 - id: kids_wifi_timer_control
   alias: Kids WiFi Timer Control
   mode: single
   trigger:
-    # Timer started or resumed
-    - platform: state
+  - platform: state
+    entity_id: timer.kids_wifi_timer
+    to: active
+    id: timer_active
+  - platform: event
+    event_type: timer.finished
+    event_data:
       entity_id: timer.kids_wifi_timer
-      to: "active"
-      id: "timer_active"
-    # Timer finished
-    - platform: event
-      event_type: timer.finished
-      event_data:
-        entity_id: timer.kids_wifi_timer
-      id: "timer_finished"
-    # Timer cancelled or paused
-    - platform: state
-      entity_id: timer.kids_wifi_timer
-      to: "idle"
-      id: "timer_idle"
-    - platform: state
-      entity_id: timer.kids_wifi_timer
-      to: "paused"
-      id: "timer_paused"
+    id: timer_finished
+  - platform: state
+    entity_id: timer.kids_wifi_timer
+    to: idle
+    id: timer_idle
+  - platform: state
+    entity_id: timer.kids_wifi_timer
+    to: paused
+    id: timer_paused
   action:
-    - choose:
-        - conditions:
-            - condition: trigger
-              id: "timer_active"
-          sequence:
-            - service: switch.turn_on
-              target:
-                entity_id: switch.4216_kids
-        - conditions:
-            - condition: trigger
-              id: 
-                - "timer_finished"
-                - "timer_idle"
-          sequence:
-            - service: switch.turn_off
-              target:
-                entity_id: switch.4216_kids
-            # Send notification when timer finishes
-            - service: notify.parents_phones  # Uncomment when ready
-              data:
-                title: "Kids WiFi Timer Expired"
-                message: "The kids' WiFi access has been turned off."
-
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: timer_active
+      sequence:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.4216_kids
+    - conditions:
+      - condition: trigger
+        id:
+        - timer_finished
+        - timer_idle
+      sequence:
+      - service: switch.turn_off
+        target:
+          entity_id: switch.4216_kids
+      - service: notify.parents_phones
+        data:
+          title: Kids WiFi Off
+          message: The kids' WiFi access has been turned off.
 - id: kids_wifi_5min_warning
   alias: Kids WiFi 5 Minute Warning
   mode: single
   trigger:
-    - platform: state
-      entity_id: binary_sensor.kids_wifi_5_min_warning
-      to: "on"
+  - platform: state
+    entity_id: binary_sensor.kids_wifi_5_min_warning
+    to: 'on'
   action:
-    - service: notify.parents_phones  # Uncomment when ready
+  - service: notify.parents_phones
+    data:
+      title: 'Kids WiFi: 5 Minutes Left!'
+      message: WiFi will turn off in 5 minutes
       data:
-        title: "Kids WiFi - 5 Minutes Left!"
-        message: "WiFi will turn off in 5 minutes"
-        data:
-          tag: "kids_wifi_warning"
-          actions:
-            - action: "EXTEND_WIFI_15"
-              title: "Add 15 minutes"
-            - action: "CANCEL_WIFI_TIMER"
-              title: "Cancel timer"
-
+        tag: kids_wifi_warning
+        actions:
+        - action: EXTEND_WIFI_15
+          title: Add 15 minutes
+        - action: CANCEL_WIFI_TIMER
+          title: Cancel timer
 - id: handle_wifi_notification_actions
   alias: Handle WiFi Notification Actions
   mode: single
   trigger:
-    - platform: event
-      event_type: mobile_app_notification_action
-      event_data:
-        action: "EXTEND_WIFI_15"
-      id: "extend"
-    - platform: event
-      event_type: mobile_app_notification_action
-      event_data:
-        action: "CANCEL_WIFI_TIMER"
-      id: "cancel"
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: EXTEND_WIFI_15
+    id: extend
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: CANCEL_WIFI_TIMER
+    id: cancel
   action:
-    - choose:
-        - conditions:
-            - condition: trigger
-              id: "extend"
-          sequence:
-            - service: script.extend_kids_wifi_timer
-            # Send confirmation
-            - service: notify.parents_phones  # Uncomment when ready
-              data:
-                title: "Kids WiFi Extended"
-                message: "Added 15 more minutes to WiFi time"
-                data:
-                  tag: "kids_wifi_extended"
-        - conditions:
-            - condition: trigger
-              id: "cancel"
-          sequence:
-            - service: script.cancel_kids_wifi_timer
-
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: extend
+      sequence:
+      - service: script.extend_kids_wifi_timer
+      - service: notify.parents_phones
+        data:
+          title: Kids WiFi Extended
+          message: Added 15 more minutes to WiFi time
+          data:
+            tag: kids_wifi_extended
+    - conditions:
+      - condition: trigger
+        id: cancel
+      sequence:
+      - service: script.cancel_kids_wifi_timer
 - id: handle_hot_water_alert_actions
   alias: Handle Hot Water Alert Actions
   mode: single
   trigger:
-    - platform: event
-      event_type: mobile_app_notification_action
-      event_data:
-        action: "ENABLE_HOT_WATER_BOOST"
-      id: "boost"
-    - platform: event
-      event_type: mobile_app_notification_action
-      event_data:
-        action: "DISMISS_HOT_WATER_ALERT"
-      id: "dismiss"
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: ENABLE_HOT_WATER_BOOST
+    id: boost
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: DISMISS_HOT_WATER_ALERT
+    id: dismiss
   action:
-    - choose:
-        - conditions:
-            - condition: trigger
-              id: "boost"
-          sequence:
-            - service: input_boolean.turn_on
-              target:
-                entity_id: input_boolean.hot_water_boost
-            - service: alert.turn_off
-              target:
-                entity_id: alert.hot_water_temperature_low
-            - service: notify.parents_phones  # Uncomment when ready
-              data:
-                title: "Hot Water Boost Enabled"
-                message: "Boost mode is now heating your water"
-                data:
-                  tag: "hot_water_boost_confirmation"
-        - conditions:
-            - condition: trigger
-              id: "dismiss"
-          sequence:
-            - service: alert.turn_off
-              target:
-                entity_id: alert.hot_water_temperature_low
-
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: boost
+      sequence:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.hot_water_boost
+      - service: alert.turn_off
+        target:
+          entity_id: alert.hot_water_temperature_low
+      - service: notify.parents_phones
+        data:
+          title: Hot Water Boost Enabled
+          message: Boost mode is now heating your water
+          data:
+            tag: hot_water_boost_confirmation
+    - conditions:
+      - condition: trigger
+        id: dismiss
+      sequence:
+      - service: alert.turn_off
+        target:
+          entity_id: alert.hot_water_temperature_low
 - id: auto_dismiss_hot_water_alert
   alias: Auto Dismiss Hot Water Alert When Temperature Rises
   mode: single
   trigger:
-    - platform: numeric_state
-      entity_id: sensor.econet_hpwh_upper_tank_temperature
-      above: 115  # Give it some buffer above 110
+  - platform: numeric_state
+    entity_id: sensor.econet_hpwh_upper_tank_temperature
+    above: 115
   condition:
-    - condition: state
-      entity_id: alert.hot_water_temperature_low
-      state: "on"
+  - condition: state
+    entity_id: alert.hot_water_temperature_low
+    state: 'on'
   action:
-    - service: alert.turn_off
-      target:
-        entity_id: alert.hot_water_temperature_low
+  - service: alert.turn_off
+    target:
+      entity_id: alert.hot_water_temperature_low
+- id: hvac_notification_actions
+  alias: "HVAC Notification Actions"
+  description: "Handle HVAC reminder notification button presses"
+  trigger:
+    - platform: event
+      event_type: mobile_app_notification_action
+      event_data:
+        action: hvac_drain_bleached
+    - platform: event
+      event_type: mobile_app_notification_action  
+      event_data:
+        action: hvac_remind_home_today
+    - platform: event
+      event_type: mobile_app_notification_action
+      event_data:
+        action: hvac_remind_next_week
+    - platform: state
+      entity_id: input_button.hvac_bleached_today
+      to: ~
+  action:
+    - choose:
+        # Drain Bleached - Mark as complete
+        - conditions:
+            - condition: or
+              conditions:
+                - condition: template
+                  value_template: "{{ trigger.event.data.action == 'hvac_drain_bleached' }}"
+                - condition: template
+                  value_template: "{{ trigger.entity_id == 'input_button.hvac_bleached_today' }}"
+          sequence:
+            - service: input_datetime.set_datetime
+              target:
+                entity_id: input_datetime.hvac_last_bleached
+              data:
+                date: "{{ now().date() }}"
+            - service: input_datetime.set_datetime
+              target:
+                entity_id: input_datetime.hvac_snooze_until
+              data:
+                datetime: "1970-01-01 00:00:00"  # Clear snooze
+            - service: notify.mobile_app_stephens_iphone
+              data:
+                message: "HVAC drain marked as bleached. Next reminder in 4 weeks."
+                
+        # Remind when home today
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'hvac_remind_home_today' }}"
+          sequence:
+            - service: notify.mobile_app_stephens_iphone
+              data:
+                message: "I'll remind you when you get home today."
+            # This will be handled by separate automation below
+                
+        # Remind next week
+        - conditions:
+            - condition: template  
+              value_template: "{{ trigger.event.data.action == 'hvac_remind_next_week' }}"
+          sequence:
+            - service: input_datetime.set_datetime
+              target:
+                entity_id: input_datetime.hvac_snooze_until
+              data:
+                datetime: >
+                  {% set today = now().date() %}
+                  {% set days_until_saturday = (5 - today.weekday()) % 7 %}
+                  {% if days_until_saturday == 0 %}
+                    {% set days_until_saturday = 7 %}
+                  {% endif %}
+                  {% set next_saturday = today + timedelta(days=days_until_saturday) %}
+                  {{ next_saturday.strftime('%Y-%m-%d') }} 08:00:00
+            - service: notify.mobile_app_stephens_iphone
+              data:
+                message: "HVAC reminder snoozed until next Saturday at 8 AM."
+
+- id: hvac_remind_when_home_today
+  alias: "HVAC Remind When Home Today"
+  description: "One-time reminder when arriving home (only active for today)"
+  trigger:
+    - platform: state
+      entity_id: person.stephengarden
+      to: 'home'
+  condition:
+    - condition: template
+      value_template: >
+        {% set last_action_time = state_attr('automation.hvac_notification_actions', 'last_triggered') %}
+        {% if last_action_time %}
+          {% set last_action_date = last_action_time.date() %}
+          {% set today = now().date() %}
+          {{ last_action_date == today }}
+        {% else %}
+          false
+        {% endif %}
+    # Additional condition to check if "remind home today" was the last action
+    # This is a simplified approach - in practice you might want a helper to track this state
+  action:
+    - service: notify.mobile_app_stephens_iphone
+      data:
+        message: "Welcome home! Don't forget to bleach the HVAC condensate line."
+        data:
+          actions:
+            - action: "hvac_drain_bleached"
+              title: "Drain Bleached" 
+              icon: "sfsymbols:checkmark.circle.fill"
+            - action: "hvac_remind_next_week"
+              title: "Remind Me Next Week"
+              icon: "sfsymbols:calendar"

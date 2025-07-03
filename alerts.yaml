@@ -63,10 +63,55 @@ hot_water_temperature_low:
   notifiers:
     - parents_phones  # Uncomment when ready
   title: "Hot Water Temperature Low"
-  message: "Water temperature: ({{ states('sensor.econet_hpwh_upper_tank_temperature') }}°F). Would you like to turn on Boost Mode?"
+  message: "Water temperature: ({{ states('sensor.econet_hpwh_upper_tank_temperature') | float(0)}}°F). Would you like to turn on Boost Mode?"
   data:
+    url: "/lovelace/climate"
     actions:
       - action: "ENABLE_HOT_WATER_BOOST"
         title: "Turn on Boost Mode"
       - action: "DISMISS_HOT_WATER_ALERT"
         title: "Dismiss"
+
+hot_water_sensor_error: # alerts me if the hot water integration hasn't recieved a signal in 6hrs
+  name: Hot Water Sensor Error
+  entity_id: binary_sensor.hot_water_tank_lower_sensor_unavailable_6_hours
+  state: "on"
+  repeat:
+    - 60    # 1hr
+    - 120   # 2hrs
+    - 360   # 6hrs
+    - 1440  # 24hrs
+  can_acknowledge: true
+  skip_first: false
+  notifiers:
+    - mobile_app_stephens_iphone
+  title: "Hot Water Sensor Error"
+  message: "Hot water temperature sensor has been unavailable for over 6 hours. Please check the system."
+  data:
+    url: "/lovelace/climate"
+
+hvac_bleach_reminder:
+  name: "HVAC Condensate Line Needs Bleaching"
+  message: "Time to bleach the HVAC condensate line! It's been 4+ weeks since last maintenance."
+  done_message: "HVAC condensate line reminder cleared."
+  entity_id: binary_sensor.hvac_reminder_due
+  state: 'on'
+  repeat:
+    - 120  # 2 hours
+    - 360  # 6 hours  
+    - 1440 # 24 hours
+  can_acknowledge: false
+  skip_first: false
+  notifiers:
+    - mobile_app_stephens_iphone
+  data:
+    actions:
+      - action: "hvac_drain_bleached"
+        title: "Drain Bleached"
+        icon: "sfsymbols:checkmark.circle.fill"
+      - action: "hvac_remind_home_today"  
+        title: "Remind Me When I Get Home Today"
+        icon: "sfsymbols:house.fill"
+      - action: "hvac_remind_next_week"
+        title: "Remind Me Next Week"
+        icon: "sfsymbols:calendar"

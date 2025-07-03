@@ -89,10 +89,35 @@
         }}
 ### END IRRIGATION ###
 
+### HOT WATER TANK ###
     - name: "Hot Water Low Temperature"
       state: >
-        {{ states('sensor.econet_hpwh_upper_tank_temperature') | float(0) < 110 }}
+        {% set temp_state = states('sensor.econet_hpwh_upper_tank_temperature') %}
+        {% if temp_state not in ['unknown', 'unavailable'] %}
+          {{ temp_state | float(0) < 110 }}
+        {% else %}
+          false
+        {% endif %}
       device_class: problem
+
+    - name: "Hot Water Tank Lower Sensor Unavailable 6+ Hours"
+      unique_id: hot_water_sensor_unavailable_6hr
+      state: >
+        {% set sensor_state = states('sensor.econet_hpwh_upper_tank_temperature') %}
+        {% if sensor_state in ['unknown', 'unavailable'] %}
+          {% set last_changed = state_attr('sensor.econet_hpwh_upper_tank_temperature', 'last_changed') %}
+          {% if last_changed %}
+            {{ (now() - last_changed).total_seconds() > 21600 }}
+          {% else %}
+            false
+          {% endif %}
+        {% else %}
+          false
+        {% endif %}
+      device_class: problem
+      icon: mdi:water-thermometer-outline
+### END HOT WATER TANK ###
+
 
     - name: "Kids WiFi 5 Min Warning"
       state: >
@@ -123,3 +148,35 @@
           {% else %}
             0
           {% endif %}
+
+    - name: "HVAC Bleach Reminder Due"
+      unique_id: hvac_reminder_due
+      state: >
+        {% set last_bleached = states('input_datetime.hvac_last_bleached') | as_datetime | as_local %}
+        {% set days_since = (now().date() - last_bleached.date()).days %}
+        {% set is_saturday = now().weekday() == 5 %}
+        {% set snooze_time = states('input_datetime.hvac_snooze_until') %}
+        
+        {# Check if snooze is active and not expired #}
+        {% set snooze_active = false %}
+        {% if snooze_time not in ['unknown', 'unavailable', ''] %}
+          {% set snooze_dt = snooze_time | as_datetime | as_local %}
+          {% set snooze_active = now() < snooze_dt %}
+        {% endif %}
+        
+        {# Check if snooze time has arrived (for next week reminders) #}
+        {% set snooze_due = false %}
+        {% if snooze_time not in ['unknown', 'unavailable', ''] %}
+          {% set snooze_dt = snooze_time | as_datetime | as_local %}
+          {% set snooze_due = now() >= snooze_dt %}
+        {% endif %}
+        
+        {# Main logic: due if 28+ days AND Saturday, OR snooze time arrived #}
+        {{ (days_since >= 28 and is_saturday and now().hour >= 8 and not snooze_active) or snooze_due }}
+        
+      icon: >
+        {% if is_state('binary_sensor.hvac_reminder_due', 'on') %}
+          mdi:pipe-leak
+        {% else %}
+          mdi:pipe
+        {% endif %}

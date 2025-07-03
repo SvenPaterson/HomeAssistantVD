@@ -10,6 +10,7 @@ alert: !include alerts.yaml
 input_boolean: !include input_booleans.yaml
 input_number: !include input_numbers.yaml
 notify: !include notify.yaml
+input_datetime: !include  input_datetime.yaml
 
 # Loads default set of integrations. Do not remove.
 default_config:
@@ -65,9 +66,7 @@ timer:
   undercabinet_vacuum:
     duration: "00:00:20"
 
-input_datetime:
-  sump_pump_last_started:
-    name: "Sump Pump Time Started"
-    has_time: true
-    has_date: true
-    icon: mdi:clock
+input_button:
+  hvac_bleached_today:
+    name: "HVAC Bleached Today"
+    icon: mdi:pipe-wrench

@@ -1,0 +1,15 @@
+sump_pump_last_started:
+  name: "Sump Pump Time Started"
+  has_time: true
+  has_date: true
+  icon: mdi:clock
+
+hvac_last_bleached:
+  name: "HVAC Last Bleached"
+  has_date: true
+  has_time: false
+  
+hvac_snooze_until:
+  name: "HVAC Snooze Until" 
+  has_date: true
+  has_time: true
