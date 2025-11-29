@@ -28,27 +28,52 @@
       unit_of_measurement: "s"
       icon: mdi:timer
 
+    - name: HACS Pending Updates
+      state: >
+        {{ states.update
+            | selectattr('entity_id','search','^update\.hacs')
+            | selectattr('state','eq','on')
+            | list | count }}
+
+
 - binary_sensor:
     # For Govee bluetooth thermohygrometer battery level alert
+    # Ignores devices that have been unavailable for less than 60 minutes
     - name: "Device With Low Battery"
       state: >
-        {{
-          [
-            states('sensor.basement_thermohygrometer_battery')|float(default=0),
-            states('sensor.guest_room_thermohygrometer_battery')|float(default=0),
-            states('sensor.master_bedroom_thermohygrometer_battery')|float(default=0)
-          ]
-          | select('lt', 15)
-          | list
-          | length > 0
-        }}
+        {% set govee_sensors = [
+          'sensor.basement_thermohygrometer_battery',
+          'sensor.guest_room_thermohygrometer_battery',
+          'sensor.master_bedroom_thermohygrometer_battery'
+        ] %}
+        {% set low_battery_devices = [] %}
+        {% for sensor in govee_sensors %}
+          {% set sensor_state = states(sensor) %}
+          {% if sensor_state not in ['unknown', 'unavailable'] %}
+            {# Device is available, check battery level #}
+            {% if sensor_state|float(default=100) < 30 %}
+              {% set low_battery_devices = low_battery_devices + [sensor] %}
+            {% endif %}
+          {% elif sensor_state in ['unknown', 'unavailable'] %}
+            {# Device is unavailable, check how long #}
+            {% set last_changed = state_attr(sensor, 'last_changed') %}
+            {% if last_changed %}
+              {% set minutes_unavailable = (now() - last_changed).total_seconds() / 60 %}
+              {# Only trigger if unavailable for more than 60 minutes #}
+              {% if minutes_unavailable > 60 %}
+                {% set low_battery_devices = low_battery_devices + [sensor] %}
+              {% endif %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        {{ low_battery_devices|length > 0 }}
       device_class: battery
       icon: mdi:battery
 
-### IRRIGATION ALERT ###
+    ### IRRIGATION ALERT ###
     # 1. Current-day "hot" flag
     - name: "Hot Day 24h Max 80F"
-      unique_id: bs_hot_day_daily
+      unique_id: hot_day_24h_max_80f
       state: "{{ states('sensor.outdoor_temp_max_24h')|float(0) >= 80 }}"
       device_class: heat
 
@@ -56,7 +81,7 @@
     - name: "Weekly Rain Below Target"
       unique_id: bs_weekly_rain_deficit
       state: >
-        {% set v = states('sensor.rain_in_past_7_days') %}
+        {% set v = states('sensor.rain_in_past_7_days_in') %}
         {{ v not in ['unknown','unavailable','none'] and v|float < 0.5 }}
       icon: mdi:weather-rainy
 
@@ -64,7 +89,7 @@
     - name: "Hot Streak Last 3 Days"
       unique_id: bs_hot_streak_3
       state: >
-        {{ states('sensor.hot_days_last_3')|int(0) >= 3 }}
+        {{ is_state('sensor.hot_streak_last_3_days', 'True') }}
       icon: mdi:sun-thermometer
 
     # 4. No precip in next 3 days
@@ -87,14 +112,13 @@
             is_state('input_boolean.watered_recently', 'off')
           )
         }}
-### END IRRIGATION ###
-
-### HOT WATER TANK ###
+    ### END IRRIGATION ###
+    ### HOT WATER TANK ###
     - name: "Hot Water Low Temperature"
       state: >
         {% set temp_state = states('sensor.econet_hpwh_upper_tank_temperature') %}
         {% if temp_state not in ['unknown', 'unavailable'] %}
-          {{ temp_state | float(0) < 110 }}
+          {{ temp_state | float(0) < 100 }}
         {% else %}
           false
         {% endif %}
@@ -116,8 +140,7 @@
         {% endif %}
       device_class: problem
       icon: mdi:water-thermometer-outline
-### END HOT WATER TANK ###
-
+    ### END HOT WATER TANK ###
 
     - name: "Kids WiFi 5 Min Warning"
       state: >
@@ -150,32 +173,33 @@
           {% endif %}
 
     - name: "HVAC Bleach Reminder Due"
-      unique_id: hvac_reminder_due
+      unique_id: hvac_bleach_reminder_due
       state: >
         {% set last_bleached = states('input_datetime.hvac_last_bleached') | as_datetime | as_local %}
         {% set days_since = (now().date() - last_bleached.date()).days %}
         {% set is_saturday = now().weekday() == 5 %}
-        {% set snooze_time = states('input_datetime.hvac_snooze_until') %}
-        
-        {# Check if snooze is active and not expired #}
+        {% set snooze_time = states('input_datetime.hvac_snooze_bleach_alert_until') %}
+
+        {# Snooze logic unchanged #}
         {% set snooze_active = false %}
         {% if snooze_time not in ['unknown', 'unavailable', ''] %}
           {% set snooze_dt = snooze_time | as_datetime | as_local %}
           {% set snooze_active = now() < snooze_dt %}
         {% endif %}
-        
-        {# Check if snooze time has arrived (for next week reminders) #}
+
         {% set snooze_due = false %}
         {% if snooze_time not in ['unknown', 'unavailable', ''] %}
           {% set snooze_dt = snooze_time | as_datetime | as_local %}
-          {% set snooze_due = now() >= snooze_dt %}
+          {% set snooze_due = now() >= snooze_dt and snooze_dt.year > 1970 %}
         {% endif %}
-        
-        {# Main logic: due if 28+ days AND Saturday, OR snooze time arrived #}
-        {{ (days_since >= 28 and is_saturday and now().hour >= 8 and not snooze_active) or snooze_due }}
-        
+
+        {# Test override #}
+        {% set test_mode = is_state('input_boolean.hvac_bleach_test', 'on') %}
+
+        {{ ((days_since >= 28 and is_saturday and now().hour >= 8 and not snooze_active) or snooze_due) or test_mode }}
+
       icon: >
-        {% if is_state('binary_sensor.hvac_reminder_due', 'on') %}
+        {% if is_state(this.entity_id, 'on') %}
           mdi:pipe-leak
         {% else %}
           mdi:pipe

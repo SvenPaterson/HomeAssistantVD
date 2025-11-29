@@ -27,34 +27,26 @@
 - id: '1661019086429'
   alias: 'SCHEDULE: Mushroom Grow Light'
   description: ''
-  trigger:
-  - platform: sun
-    event: sunrise
+  triggers:
+  - event: sunrise
     offset: 0
     id: SunUp
-  - platform: sun
-    event: sunset
+    trigger: sun
+  - event: sunset
     offset: 0
     id: SunDown
-  condition: []
-  action:
+    trigger: sun
+  conditions: []
+  actions:
   - choose:
     - conditions:
       - condition: trigger
         id: SunUp
-      sequence:
-      - type: turn_on
-        device_id: 74db76f01d47eb0d5ee0172843cef94b
-        entity_id: switch.shellyplugus_083af20077a4_switch_0
-        domain: switch
+      sequence: []
     - conditions:
       - condition: trigger
         id: SunDown
-      sequence:
-      - type: turn_off
-        device_id: 74db76f01d47eb0d5ee0172843cef94b
-        entity_id: switch.shellyplugus_083af20077a4_switch_0
-        domain: switch
+      sequence: []
   mode: single
 - id: '1661712457366'
   alias: Sunrise & Sunset Lights Schedule
@@ -76,20 +68,19 @@
       - condition: trigger
         id: SunUp
       sequence:
-      - data: {}
+      - action: light.turn_off
         target:
-          entity_id:
-          - switch.outdoor_lights
-          - switch.tasmota_2
-        action: switch.turn_off
+          area_id: porch
+        data: {}
     - conditions:
       - condition: trigger
         id: SunDown
       sequence:
-      - data: {}
+      - action: light.turn_on
+        data: {}
         target:
-          entity_id: switch.outdoor_lights
-        action: switch.turn_on
+          area_id: porch
+          entity_id: light.hall_table_lamp
   mode: single
 - id: '1673891966542'
   alias: 'FAMILY ROOM: Ping TV'
@@ -181,31 +172,43 @@
   mode: single
 - id: '1674405833015'
   alias: 'LAUNDRY: Washing Machine Completed Notification'
-  description: ''
+  description: 'Send notifications to our phones and TV when Laundry is ready (and
+    I am not at work)
+
+    '
   triggers:
-  - entity_id:
-    - input_select.washing_machine_status
+  - trigger: state
+    entity_id: input_select.washing_machine_status
     to: 'Off'
-    trigger: state
   conditions: []
   actions:
-  - action: notify.mobile_app_stephens_iphone
-    data:
-      title: Laundry Room
-      message: Washing Machine complete and ready to be emptied!
+  - choose:
+    - conditions:
+      - condition: not
+        conditions:
+        - condition: zone
+          entity_id: person.stephengarden
+          zone: zone.work
+      sequence:
+      - action: notify.stephens_devices
+        data:
+          title: Laundry Room
+          message: Washing Machine complete and ready to be emptied!
   - action: notify.mobile_app_iphone_2
     data:
-      message: Washing Machine complete and ready to be emptied!
       title: Laundry Room
-  - if:
-    - condition: state
-      entity_id: media_player.family_room_lgtv
-      state: 'off'
-    then: []
-    else:
-    - data:
-        message: Washing machine is finished!
-      action: notify.family_room_lgtv
+      message: Washing Machine complete and ready to be emptied!
+  - choose:
+    - conditions:
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: media_player.family_room_lgtv
+          state: 'off'
+      sequence:
+      - action: notify.family_room_lgtv
+        data:
+          message: Washing machine is finished!
   mode: single
 - id: '1674418857081'
   alias: Home Status Logic
@@ -278,10 +281,6 @@
           entity_id:
           - climate.master_bedroom_heater
           - climate.guest_room
-      - service: switch.turn_off
-        data: {}
-        target:
-          entity_id: switch.all_lights
     - conditions:
       - condition: trigger
         id: ALL_HOME
@@ -401,13 +400,12 @@
   description: ''
   triggers:
   - entity_id:
-    - water_heater.heat_pump_water_heater
-    attribute: operation_mode
+    - sensor.econet_hpwh_mode
     to: high_demand
     id: to_boost
     trigger: state
   - entity_id:
-    - water_heater.heat_pump_water_heater
+    - sensor.econet_hpwh_mode
     to: heat_pump
     id: to_normal
     trigger: state
@@ -528,54 +526,6 @@
           entity_id: timer.nap_mode_timer
         action: timer.cancel
   mode: parallel
-- id: '1687015242883'
-  alias: 'OFFICE: AC & HT'
-  description: will turn on office AC with home theater depending on the temperature
-    in the office
-  trigger:
-  - platform: state
-    entity_id:
-    - media_player.marantz_sr5011
-    from: 'off'
-    to: 'on'
-    id: HT-ON
-  - platform: state
-    entity_id:
-    - media_player.marantz_sr5011
-    from: 'on'
-    to: 'off'
-    id: HT-OFF
-  condition: []
-  action:
-  - choose:
-    - conditions:
-      - condition: and
-        conditions:
-        - condition: trigger
-          id: HT-ON
-        - condition: numeric_state
-          entity_id: climate.office_window_ac
-          attribute: current_temperature
-          above: 74
-      sequence:
-      - service: climate.turn_on
-        data: {}
-        target:
-          entity_id: climate.office_window_ac
-      - service: climate.set_temperature
-        data:
-          temperature: 72
-        target:
-          entity_id: climate.office_window_ac
-    - conditions:
-      - condition: trigger
-        id: HT-OFF
-      sequence:
-      - service: climate.turn_off
-        data: {}
-        target:
-          entity_id: climate.office_window_ac
-  mode: single
 - id: '1687712963822'
   alias: 'GUEST ROOM: Climate Trigger'
   description: ''
@@ -657,7 +607,7 @@
     device_id: cfa3aa26206b2f8199736a2d67241095
     entity_id: d4caee3a89a511e67018fd695c0f2036
     domain: sensor
-    below: 20
+    below: 40
     id: low_charge
     trigger: device
   - type: battery_level
@@ -695,36 +645,48 @@
   mode: single
 - id: '1691793928348'
   alias: 'MASTER BEDROOM: Winter Mode Control'
-  description: Control outlet behavior based on winter mode state, with heating schedule
-    condition.
-  trigger:
-  - platform: state
+  description: 'When winter mode is ON, the outlet behaves as a heater controlled
+    by the heating schedule + thermostat. When winter mode is OFF, the outlet is always
+    ON and acts as a normal outlet.
+
+    '
+  triggers:
+  - trigger: state
     entity_id:
     - input_boolean.winter_mode
-  condition: []
-  action:
+  conditions: []
+  actions:
   - choose:
     - conditions:
       - condition: state
         entity_id: input_boolean.winter_mode
-        state: 'on'
-      - condition: state
-        entity_id: schedule.master_bedroom_heating_schedule
         state: 'off'
       sequence:
-      - service: switch.turn_off
-        data: {}
+      - action: switch.turn_on
         target:
           device_id: bf02543848006e26fe21c8652c3c4efa
+        data: {}
+      - action: automation.turn_off
+        metadata: {}
+        data:
+          stop_actions: true
+        target:
+          entity_id: automation.schedule_master_bedroom_heater
+      - action: climate.turn_off
+        metadata: {}
+        data: {}
+        target:
+          entity_id: climate.master_bedroom_heater
     - conditions:
       - condition: state
         entity_id: input_boolean.winter_mode
-        state: 'off'
+        state: 'on'
       sequence:
-      - service: switch.turn_on
+      - action: automation.turn_on
+        metadata: {}
         data: {}
         target:
-          device_id: bf02543848006e26fe21c8652c3c4efa
+          entity_id: automation.schedule_master_bedroom_heater
   mode: single
 - id: '1726002348254'
   alias: 'BASEMENT: Water Leak Detected'
@@ -786,7 +748,7 @@
           message: Warning! Water detected in the basement!
           media_player_entity_id: media_player.announcement_group
         target:
-          entity_id: tts.piper
+          entity_id: tts.openai_tts_tts_1_hd
       - delay:
           hours: 0
           minutes: 5
@@ -1238,109 +1200,233 @@
     target:
       entity_id: alert.hot_water_temperature_low
 - id: hvac_notification_actions
-  alias: "HVAC Notification Actions"
-  description: "Handle HVAC reminder notification button presses"
+  alias: HVAC Notification Actions
+  description: Handle HVAC reminder notification button presses
   trigger:
-    - platform: event
-      event_type: mobile_app_notification_action
-      event_data:
-        action: hvac_drain_bleached
-    - platform: event
-      event_type: mobile_app_notification_action  
-      event_data:
-        action: hvac_remind_home_today
-    - platform: event
-      event_type: mobile_app_notification_action
-      event_data:
-        action: hvac_remind_next_week
-    - platform: state
-      entity_id: input_button.hvac_bleached_today
-      to: ~
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: hvac_drain_bleached
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: hvac_remind_home_today
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: hvac_remind_next_week
+  - platform: state
+    entity_id: input_button.hvac_bleached_today
+    to:
   action:
-    - choose:
-        # Drain Bleached - Mark as complete
-        - conditions:
-            - condition: or
-              conditions:
-                - condition: template
-                  value_template: "{{ trigger.event.data.action == 'hvac_drain_bleached' }}"
-                - condition: template
-                  value_template: "{{ trigger.entity_id == 'input_button.hvac_bleached_today' }}"
-          sequence:
-            - service: input_datetime.set_datetime
-              target:
-                entity_id: input_datetime.hvac_last_bleached
-              data:
-                date: "{{ now().date() }}"
-            - service: input_datetime.set_datetime
-              target:
-                entity_id: input_datetime.hvac_snooze_until
-              data:
-                datetime: "1970-01-01 00:00:00"  # Clear snooze
-            - service: notify.mobile_app_stephens_iphone
-              data:
-                message: "HVAC drain marked as bleached. Next reminder in 4 weeks."
-                
-        # Remind when home today
-        - conditions:
-            - condition: template
-              value_template: "{{ trigger.event.data.action == 'hvac_remind_home_today' }}"
-          sequence:
-            - service: notify.mobile_app_stephens_iphone
-              data:
-                message: "I'll remind you when you get home today."
-            # This will be handled by separate automation below
-                
-        # Remind next week
-        - conditions:
-            - condition: template  
-              value_template: "{{ trigger.event.data.action == 'hvac_remind_next_week' }}"
-          sequence:
-            - service: input_datetime.set_datetime
-              target:
-                entity_id: input_datetime.hvac_snooze_until
-              data:
-                datetime: >
-                  {% set today = now().date() %}
-                  {% set days_until_saturday = (5 - today.weekday()) % 7 %}
-                  {% if days_until_saturday == 0 %}
-                    {% set days_until_saturday = 7 %}
-                  {% endif %}
-                  {% set next_saturday = today + timedelta(days=days_until_saturday) %}
-                  {{ next_saturday.strftime('%Y-%m-%d') }} 08:00:00
-            - service: notify.mobile_app_stephens_iphone
-              data:
-                message: "HVAC reminder snoozed until next Saturday at 8 AM."
-
-- id: hvac_remind_when_home_today
-  alias: "HVAC Remind When Home Today"
-  description: "One-time reminder when arriving home (only active for today)"
-  trigger:
-    - platform: state
-      entity_id: person.stephengarden
-      to: 'home'
-  condition:
-    - condition: template
-      value_template: >
-        {% set last_action_time = state_attr('automation.hvac_notification_actions', 'last_triggered') %}
-        {% if last_action_time %}
-          {% set last_action_date = last_action_time.date() %}
-          {% set today = now().date() %}
-          {{ last_action_date == today }}
-        {% else %}
-          false
-        {% endif %}
-    # Additional condition to check if "remind home today" was the last action
-    # This is a simplified approach - in practice you might want a helper to track this state
-  action:
-    - service: notify.mobile_app_stephens_iphone
-      data:
-        message: "Welcome home! Don't forget to bleach the HVAC condensate line."
+  - choose:
+    - conditions:
+      - condition: or
+        conditions:
+        - condition: template
+          value_template: '{{ trigger.event.data.action == ''hvac_drain_bleached''
+            }}'
+        - condition: template
+          value_template: '{{ trigger.entity_id == ''input_button.hvac_bleached_today''
+            }}'
+      sequence:
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.hvac_last_bleached
         data:
-          actions:
-            - action: "hvac_drain_bleached"
-              title: "Drain Bleached" 
-              icon: "sfsymbols:checkmark.circle.fill"
-            - action: "hvac_remind_next_week"
-              title: "Remind Me Next Week"
-              icon: "sfsymbols:calendar"
+          date: '{{ now().date() }}'
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.hvac_snooze_bleach_alert_until
+        data:
+          datetime: '1970-01-01 00:00:00'
+      - service: notify.mobile_app_stephens_iphone
+        data:
+          message: clear_notification
+          data:
+            tag: hvac-bleach-reminder
+      - service: notify.mobile_app_stephens_iphone
+        data:
+          message: HVAC drain marked as bleached. Next reminder in 4 weeks.
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.event.data.action == ''hvac_remind_home_today''
+          }}'
+      sequence:
+      - service: notify.mobile_app_stephens_iphone
+        data:
+          message: I'll remind you when you get home today.
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.event.data.action == ''hvac_remind_next_week''
+          }}'
+      sequence:
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.hvac_snooze_bleach_alert_until
+        data:
+          datetime: "{% set today = now().date() %} {% set days_until_saturday = (5
+            - today.weekday()) % 7 %} {% if days_until_saturday == 0 %}\n  {% set
+            days_until_saturday = 7 %}\n{% endif %} {% set next_saturday = today +
+            timedelta(days=days_until_saturday) %} {{ next_saturday.strftime('%Y-%m-%d')
+            }} 08:00:00\n"
+      - service: notify.mobile_app_stephens_iphone
+        data:
+          message: HVAC reminder snoozed until next Saturday at 8 AM.
+- id: hvac_remind_when_home_today
+  alias: HVAC Remind When Home Today
+  description: One-time reminder when arriving home (only active for today)
+  trigger:
+  - platform: state
+    entity_id: person.stephengarden
+    to: home
+  condition:
+  - condition: template
+    value_template: "{% set last_action_time = state_attr('automation.hvac_notification_actions',
+      'last_triggered') %} {% if last_action_time %}\n  {% set last_action_date =
+      last_action_time.date() %}\n  {% set today = now().date() %}\n  {{ last_action_date
+      == today }}\n{% else %}\n  false\n{% endif %}\n"
+  action:
+  - service: notify.mobile_app_stephens_iphone
+    data:
+      message: Welcome home! Don't forget to bleach the HVAC condensate line.
+      data:
+        tag: hvac-bleach-reminder
+        group: hvac-maintenance
+        actions:
+        - action: hvac_drain_bleached
+          title: Drain Bleached
+          icon: sfsymbols:checkmark.circle.fill
+        - action: hvac_remind_next_week
+          title: Remind Me Next Week
+          icon: sfsymbols:calendar
+- id: shift_daily_max_temperatures
+  alias: 'SYSTEM: Shift Daily Max Temperatures'
+  description: Shift historical temperature values daily at midnight for hot day tracking
+  triggers:
+  - at: 00:01:00
+    trigger: time
+  actions:
+  - variables:
+      todays_max: '{{ states("sensor.outdoor_temp_max_24h")|float(0) }}'
+      yesterdays_max: '{{ states("input_number.yesterday_max_temp")|float(0) }}'
+      day_before_yesterdays_max: '{{ states("input_number.day_before_yesterday_max_temp")|float(0)
+        }}'
+  - service: input_number.set_value
+    target:
+      entity_id: input_number.three_days_ago_max_temp
+    data:
+      value: '{{ day_before_yesterdays_max }}'
+  - service: input_number.set_value
+    target:
+      entity_id: input_number.day_before_yesterday_max_temp
+    data:
+      value: '{{ yesterdays_max }}'
+  - service: input_number.set_value
+    target:
+      entity_id: input_number.yesterday_max_temp
+    data:
+      value: '{{ todays_max }}'
+  mode: single
+- id: '1757424296612'
+  alias: Ben and Lew Screen Time Daily Reset
+  description: Resets the input numbers that tracks screen time for Ben and Lewis
+  triggers:
+  - trigger: time
+    at: 00:00:00
+    weekday:
+    - sun
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+    - sat
+  conditions: []
+  actions:
+  - action: input_number.set_value
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - input_number.ben_screen_time
+      - input_number.lewis_screen_time
+  mode: single
+- id: ben_screentime_timer_finished
+  alias: Ben Screen Time Timer Finished
+  mode: single
+  trigger:
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.ben_screentime
+  action:
+  - service: assist_satellite.announce
+    target:
+      entity_id: assist_satellite.home_assistant_voice_0a1a5a_assist_satellite
+    data:
+      message: Ben's screen time is over! Time to put devices away.
+      media_player_entity_id: media_player.home_assistant_voice_0a1a5a_media_player
+- id: lewis_screentime_timer_finished
+  alias: Lewis Screen Time Timer Finished
+  mode: single
+  trigger:
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.lewis_screentime
+  action:
+  - service: assist_satellite.announce
+    target:
+      entity_id: assist_satellite.home_assistant_voice_0a1a5a_assist_satellite
+    data:
+      message: Lewis's screen time is over! Time to put devices away.
+      media_player_entity_id: media_player.home_assistant_voice_0a1a5a_media_player
+- id: '1757424296613'
+  alias: 'KITCHEN: Voice Assistant Volume Schedule'
+  description: Set kitchen voice assistant to quiet mode at night (10%) and restore
+    to normal (40%) in the morning
+  triggers:
+  - at: '20:00:00'
+    trigger: time
+    id: evening
+  - at: 07:00:00
+    trigger: time
+    id: morning
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: evening
+      sequence:
+      - target:
+          entity_id: media_player.kitchen_ha_voice_media_player
+        data:
+          volume_level: 0.05
+        action: media_player.volume_set
+    - conditions:
+      - condition: trigger
+        id: morning
+      sequence:
+      - target:
+          entity_id: media_player.kitchen_ha_voice_media_player
+        data:
+          volume_level: 0.4
+        action: media_player.volume_set
+  mode: single
+- id: battery_notification_actions
+  alias: 'BATTERY: Handle Notification Actions'
+  description: Handle battery notification button presses
+  triggers:
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: BATTERY_CHANGED
+  conditions: []
+  actions:
+  - action: notify.mobile_app_stephens_iphone
+    data:
+      message: Battery change noted. Alert will clear once all batteries are above
+        30%.
+  mode: single

@@ -32,3 +32,39 @@ sump_pump_last_runtime:
   max: 1000000
   step: 1
   unit_of_measurement: "secs"
+
+# Historical temperature storage for hot day tracking
+yesterday_max_temp:
+  name: "Yesterday Max Temperature"
+  min: -50
+  max: 150
+  step: 0.1
+  unit_of_measurement: "°F"
+
+day_before_yesterday_max_temp:
+  name: "Day Before Yesterday Max Temperature"
+  min: -50
+  max: 150
+  step: 0.1
+  unit_of_measurement: "°F"
+
+three_days_ago_max_temp:
+  name: "Three Days Ago Max Temperature"
+  min: -50
+  max: 150
+  step: 0.1
+  unit_of_measurement: "°F"
+
+ben_screen_time:
+  name: "Screen Time for Ben"
+  min: 0
+  max: 60
+  step: 5
+  unit_of_measurement: "mins"
+
+lewis_screen_time:
+  name: "Screen Time for Lewis"
+  min: 0
+  max: 60
+  step: 5
+  unit_of_measurement: "mins"

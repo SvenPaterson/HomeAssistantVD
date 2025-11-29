@@ -5,3 +5,9 @@ watered_recently:
 
 test_override_irrigation:
   name: "Test - Override Irrigation Alert"
+
+# washing machine notifications
+wm_critical_stephen_this_cycle:
+  name: WM critical (Stephen) this cycle
+wm_critical_lindsay_this_cycle:
+  name: WM critical (Lindsay) this cycle

@@ -3,7 +3,7 @@ start_kids_wifi_timer:
   mode: single
   fields:
     minutes:
-      description: "Duration in minutes"
+      description: Duration in minutes
       example: "15"
   sequence:
     - service: timer.start
@@ -11,7 +11,6 @@ start_kids_wifi_timer:
         entity_id: timer.kids_wifi_timer
         duration:
           minutes: "{{ minutes }}"
-
 cancel_kids_wifi_timer:
   alias: Cancel Kids WiFi Timer + Block
   mode: single
@@ -19,7 +18,6 @@ cancel_kids_wifi_timer:
     - service: timer.cancel
       target:
         entity_id: timer.kids_wifi_timer
-
 toggle_kids_wifi_timer_pause:
   alias: Toggle Kids WiFi Timer Pause
   mode: single
@@ -28,7 +26,7 @@ toggle_kids_wifi_timer_pause:
         - conditions:
             - condition: state
               entity_id: timer.kids_wifi_timer
-              state: "active"
+              state: active
           sequence:
             - service: timer.pause
               target:
@@ -36,12 +34,11 @@ toggle_kids_wifi_timer_pause:
         - conditions:
             - condition: state
               entity_id: timer.kids_wifi_timer
-              state: "paused"
+              state: paused
           sequence:
             - service: timer.start
               target:
                 entity_id: timer.kids_wifi_timer
-
 extend_kids_wifi_timer:
   alias: Extend Kids WiFi Timer by 15 Minutes
   mode: single
@@ -49,25 +46,104 @@ extend_kids_wifi_timer:
     - condition: state
       entity_id: timer.kids_wifi_timer
       state:
-        - "active"
-        - "paused"
+        - active
+        - paused
     - service: timer.start
       data:
         entity_id: timer.kids_wifi_timer
-        duration: >
-          {% if is_state('timer.kids_wifi_timer', 'active') %}
-            {% set finishes = state_attr('timer.kids_wifi_timer', 'finishes_at') %}
-            {% set finish_time = as_timestamp(finishes) %}
-            {% set current_time = as_timestamp(now()) %}
-            {% set seconds_left = finish_time - current_time %}
-            {{ (seconds_left + 900) | int }}
-          {% else %}
-            {% set remaining = state_attr('timer.kids_wifi_timer', 'remaining') %}
-            {% if remaining %}
-              {% set parts = remaining.split(':') %}
-              {% set seconds = parts[0]|int * 3600 + parts[1]|int * 60 + parts[2]|int %}
-              {{ seconds + 900 }}
-            {% else %}
-              900
-            {% endif %}
+        duration:
+          "{% if is_state('timer.kids_wifi_timer', 'active') %}\n  {% set finishes
+          = state_attr('timer.kids_wifi_timer', 'finishes_at') %}\n  {% set finish_time
+          = as_timestamp(finishes) %}\n  {% set current_time = as_timestamp(now()) %}\n
+          \ {% set seconds_left = finish_time - current_time %}\n  {{ (seconds_left
+          + 900) | int }}\n{% else %}\n  {% set remaining = state_attr('timer.kids_wifi_timer',
+          'remaining') %}\n  {% if remaining %}\n    {% set parts = remaining.split(':')
+          %}\n    {% set seconds = parts[0]|int * 3600 + parts[1]|int * 60 + parts[2]|int
+          %}\n    {{ seconds + 900 }}\n  {% else %}\n    900\n  {% endif %}\n{% endif
+          %}"
+llm_script_for_music_assistant_voice_requests:
+  alias: LLM Script For Music Assistant Voice Requests
+  use_blueprint:
+    path: music-assistant/llm_voice_script.yaml
+    input:
+      default_player: media_player.living_room_hifi_airplay
+  description:
+    "This script is used to play music based on a voice request. The tool
+    takes the following arguments: media_type, artist, album, media_id, radio_mode,
+    area, shuffle. media_id, media_type, and shuffle are always required and must
+    always be supplied as arguments to this tool. An area or Music Assistant media
+    player can optionally be provided in the voice request as well. Use the parameters
+    as described in the description of each parameter. Use this tool whenever the
+    user requests to play music."
+adjust_screen_time:
+  alias: "Adjust Screen Time"
+  mode: single
+  fields:
+    kid:
+      description: "Entity ID of the kid's input number"
+      example: input_number.ben_screen_time
+    amount:
+      description: "Minutes to add (negative = subtract)"
+      example: "5 or -15"
+  sequence:
+    - service: input_number.set_value
+      target:
+        entity_id: "{{ kid }}"
+      data:
+        value: >
+          {% set current = states(kid) | int(0) %}
+          {% set new = current + amount %}
+          {% if new > 60 %} 60
+          {% elif new < 0 %} 0
+          {% else %} {{ new }}
           {% endif %}
+
+start_screentime_timer:
+  alias: Start Screen Time Timer (HA Timer + Voice PE Announcements)
+  mode: restart
+  fields:
+    kid_name:
+      example: "Ben"
+    minutes_entity:
+      example: "input_number.ben_screen_time"
+    satellite_entity:
+      description: "Assist satellite entity for the target Voice PE"
+      example: assist_satellite.home_assistant_voice_0a1a5a_assist_satellite
+    volume:
+      example: "100"
+  sequence:
+    - variables:
+        mins: "{{ states(minutes_entity) | int(0) }}"
+        timer_entity: "timer.{{ kid_name.lower() }}_screentime"
+        vol: "{{ ((volume | default(80)) | float) / 100 }}"
+        mp_entity: "{{ satellite_entity.replace('assist_satellite', 'media_player').replace('_assist_satellite', '_media_player') }}"
+    - if:
+        - condition: template
+          value_template: "{{ mins > 0 }}"
+      then:
+        # Set media player volume
+        - service: media_player.volume_set
+          target: { entity_id: "{{ mp_entity }}"}
+          data: { volume_level: "{{ vol }}" }
+        
+        # Start HA timer helper
+        - service: timer.start
+          target:
+            entity_id: "{{ timer_entity }}"
+          data:
+            duration:
+              minutes: "{{ mins }}"
+        
+        # Announce timer start on specific Voice PE device
+        - service: assist_satellite.announce
+          target:
+            entity_id: "{{ satellite_entity }}"
+          data:
+            message: "{{ kid_name }}'s screen time timer started for {{ mins }} minute{{ 's' if mins != 1 else '' }}. Timer will end at {{ (now() + timedelta(minutes=mins)).strftime('%-I:%M %p') }}."
+            media_player_entity_id: "{{ mp_entity }}"
+      else:
+        - service: persistent_notification.create
+          data:
+            title: "Screen Timer"
+            message: "Refused to start: set {{ kid_name }}'s minutes above 0."
+            notification_id: screentimer_error

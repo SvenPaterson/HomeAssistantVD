@@ -33,7 +33,7 @@ history:
 homekit:
   filter:
     include_entities:
-      - switch.amcrest_camera_privacy_mode
+      - switch.amcrest_camera_privacy_mode  # Exposes camera privacy mode to Apple HomeKit
 
 influxdb:
   host: 192.168.1.100
@@ -47,6 +47,8 @@ influxdb:
     entity_globs:
       - sensor.sump_pump*
       - sensor.openweathermap*
+      - sensor.fr_if03re000362_radon*
+      - input_number.sump_pump*
 
 conversation:
   intents:
@@ -59,12 +61,19 @@ amcrest:
   - host: 192.168.1.72
     username: admin
     password: M4rbj9fHhd
+    name: Amcrest Camera  # Added name to ensure consistent entity IDs
     switches:
       - privacy_mode
 
 timer:
   undercabinet_vacuum:
     duration: "00:00:20"
+  ben_screentime:
+    name: "Ben's Screen Time Timer"
+    icon: mdi:tablet
+  lewis_screentime:
+    name: "Lewis's Screen Time Timer"
+    icon: mdi:tablet
 
 input_button:
   hvac_bleached_today:

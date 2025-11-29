@@ -1,13 +1,3 @@
-# size of Maria DB
-- platform: sql
-  db_url: !secret mariadb_url
-  queries:
-    - name: MariaDB Size
-      query: "SELECT table_schema AS 'database', ROUND(SUM(data_length + index_length) / 1024 / 1024, 1) AS 'size' FROM information_schema.TABLES WHERE table_schema = 'homeassistant' GROUP BY table_schema;"
-      column: "size"
-      unit_of_measurement: "MB"
-
-
 # A. Integrate OWM rain-rate (in/hr) → cumulative depth (in)
 - platform: integration
   name: rain_cumulative_in
@@ -47,13 +37,35 @@
           states('sensor.pirateweather_precip_accumulation_3d')|float(0)
         ) | round(2) }}
 
-# E. Count of hot days (≥ 80 °F) in past 3 days
-- platform: history_stats
-  name: "Hot Days Last 3"
-  unique_id: hs_hot_days_3
-  entity_id: binary_sensor.hot_day_24h_max_80f
-  state: "on"
-  type: count
-  end: "{{ now() }}"
-  duration:
-    days: 3
+# E. Track historical daily max temperatures using template sensors
+- platform: template
+  sensors:
+    yesterday_max_temp:
+      friendly_name: "Yesterday Max Temp"
+      unique_id: tpl_yesterday_max_temp
+      unit_of_measurement: "°F"
+      value_template: "{{ states('input_number.yesterday_max_temp')|float(0) }}"
+    
+    day_before_yesterday_max_temp:
+      friendly_name: "Day Before Yesterday Max Temp"
+      unique_id: tpl_day_before_yesterday_max_temp
+      unit_of_measurement: "°F"
+      value_template: >
+        {{ states('input_number.day_before_yesterday_max_temp')|float(0) }}
+    
+    three_days_ago_max_temp:
+      friendly_name: "Three Days Ago Max Temp"
+      unique_id: tpl_three_days_ago_max_temp
+      unit_of_measurement: "°F"
+      value_template: >
+        {{ states('input_number.three_days_ago_max_temp')|float(0) }}
+
+    hot_streak_last_3_days:
+      friendly_name: "Hot Streak Last 3 Days"
+      unique_id: tpl_hot_streak_last_3_days
+      value_template: >
+        {{
+          states('sensor.yesterday_max_temp')|float(0) >= 80 and
+          states('sensor.day_before_yesterday_max_temp')|float(0) >= 80 and
+          states('sensor.three_days_ago_max_temp')|float(0) >= 80
+        }}

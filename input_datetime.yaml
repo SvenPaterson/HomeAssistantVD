@@ -9,7 +9,7 @@ hvac_last_bleached:
   has_date: true
   has_time: false
   
-hvac_snooze_until:
-  name: "HVAC Snooze Until" 
+hvac_snooze_bleach_alert_until:
+  name: "HVAC Snooze Bleach Alert Until" 
   has_date: true
   has_time: true

@@ -3,19 +3,27 @@ low_battery:
   done_message: clear_notification
   entity_id: binary_sensor.device_with_low_battery
   state: "on"
-  repeat: 60
+  repeat:
+    - 60      # 1 hour - first reminder
+    - 360     # 6 hours - second reminder
+    - 1440    # 24 hours - then daily
   can_acknowledge: true
   skip_first: false
   notifiers:
     - mobile_app_stephens_iphone
+  title: "Low Battery Alert"
+  message: "A Govee sensor has low battery (<30%). Replace batteries soon!"
   data:
-    message: "A device has low battery"
-    title: "Low Battery Alert"
     tag: "low-battery"
     actions:
+      - action: "BATTERY_CHANGED"
+        title: "Batteries Changed"
+        icon: "sfsymbols:battery.100"
+        destructive: true
       - action: "URI"
         title: "Check Status"
         uri: "/system-status/battery-levels"
+        icon: "sfsymbols:info.circle"
 
 
 irrigation_needed:
@@ -24,7 +32,7 @@ irrigation_needed:
   message: >
     Irrigation Needed
     
-    Rain Last 7: {{ states('sensor.rain_in_past_7_days')|float(0)|round(2) }}"
+    Rain Last 7: {{ states('sensor.rain_in_past_7_days_in')|float(0)|round(2) }}"
     Rain Next 3: {{ states('sensor.rain_next_3_days_in')|float(0)|round(2) }}"
   done_message: "Irrigation alert cleared"
   entity_id: binary_sensor.irrigation_needed_condition
@@ -63,7 +71,7 @@ hot_water_temperature_low:
   notifiers:
     - parents_phones  # Uncomment when ready
   title: "Hot Water Temperature Low"
-  message: "Water temperature: ({{ states('sensor.econet_hpwh_upper_tank_temperature') | float(0)}}°F). Would you like to turn on Boost Mode?"
+  message: "Water temperature: ({{ states('sensor.econet_hpwh_upper_tank_temperature') | float(0) | round(1) }}°F). Would you like to turn on Boost Mode?"
   data:
     url: "/lovelace/climate"
     actions:
@@ -93,23 +101,25 @@ hot_water_sensor_error: # alerts me if the hot water integration hasn't recieved
 hvac_bleach_reminder:
   name: "HVAC Condensate Line Needs Bleaching"
   message: "Time to bleach the HVAC condensate line! It's been 4+ weeks since last maintenance."
-  done_message: "HVAC condensate line reminder cleared."
-  entity_id: binary_sensor.hvac_reminder_due
+  done_message: clear_notification
+  entity_id: binary_sensor.hvac_bleach_reminder_due
   state: 'on'
   repeat:
     - 120  # 2 hours
-    - 360  # 6 hours  
+    - 360  # 6 hours
     - 1440 # 24 hours
   can_acknowledge: false
   skip_first: false
   notifiers:
     - mobile_app_stephens_iphone
   data:
+    tag: "hvac-bleach-reminder"
+    group: "hvac-maintenance"
     actions:
       - action: "hvac_drain_bleached"
         title: "Drain Bleached"
         icon: "sfsymbols:checkmark.circle.fill"
-      - action: "hvac_remind_home_today"  
+      - action: "hvac_remind_home_today"
         title: "Remind Me When I Get Home Today"
         icon: "sfsymbols:house.fill"
       - action: "hvac_remind_next_week"
