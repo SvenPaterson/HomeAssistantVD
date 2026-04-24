@@ -1,30 +1,30 @@
-low_battery:
-  name: A device has low battery
+smoke_detector_test_reminder:
+  name: "Smoke Detector Test Reminder"
+  title: "🔥 Monthly Smoke Detector Test"
+  message: "Time to test your smoke detectors! Press each test button and confirm all alarms sound."
   done_message: clear_notification
-  entity_id: binary_sensor.device_with_low_battery
-  state: "on"
+  entity_id: binary_sensor.smoke_detector_test_due
+  state: 'on'
   repeat:
-    - 60      # 1 hour - first reminder
-    - 360     # 6 hours - second reminder
-    - 1440    # 24 hours - then daily
-  can_acknowledge: true
+    - 600   # ~6 PM if initial fires at 8 AM
+    - 1440  # daily at ~6 PM until confirmed
+  can_acknowledge: false
   skip_first: false
   notifiers:
-    - mobile_app_stephens_iphone
-  title: "Low Battery Alert"
-  message: "A Govee sensor has low battery (<30%). Replace batteries soon!"
+    - parents_phones
   data:
-    tag: "low-battery"
+    tag: "smoke-detector-test"
+    group: "safety-maintenance"
     actions:
-      - action: "BATTERY_CHANGED"
-        title: "Batteries Changed"
-        icon: "sfsymbols:battery.100"
-        destructive: true
-      - action: "URI"
-        title: "Check Status"
-        uri: "/system-status/battery-levels"
-        icon: "sfsymbols:info.circle"
-
+      - action: "smoke_tested"
+        title: "✅ Tested!"
+        icon: "sfsymbols:checkmark.circle.fill"
+      - action: "smoke_snooze_evening"
+        title: "🌙 Remind Me Tonight"
+        icon: "sfsymbols:moon.fill"
+      - action: "smoke_snooze_tomorrow"
+        title: "📅 Remind Me Tomorrow"
+        icon: "sfsymbols:calendar"
 
 irrigation_needed:
   name: Lawn Irrigation Needed
@@ -32,7 +32,7 @@ irrigation_needed:
   message: >
     Irrigation Needed
     
-    Rain Last 7: {{ states('sensor.rain_in_past_7_days_in')|float(0)|round(2) }}"
+    Rain Last 7: {{ states('sensor.rain_past_7_days_in')|float(0)|round(2) }}"
     Rain Next 3: {{ states('sensor.rain_next_3_days_in')|float(0)|round(2) }}"
   done_message: "Irrigation alert cleared"
   entity_id: binary_sensor.irrigation_needed_condition
@@ -44,7 +44,7 @@ irrigation_needed:
   can_acknowledge: true
   skip_first: false
   notifiers:
-    - mobile_app_your_phone  # Replace with your notifier
+    - mobile_app_stephen_iphone
   data:
     tag: "irrigation-alert"
     group: "irrigation"
@@ -92,11 +92,36 @@ hot_water_sensor_error: # alerts me if the hot water integration hasn't recieved
   can_acknowledge: true
   skip_first: false
   notifiers:
-    - mobile_app_stephens_iphone
+    - mobile_app_stephen_iphone
   title: "Hot Water Sensor Error"
   message: "Hot water temperature sensor has been unavailable for over 6 hours. Please check the system."
   data:
     url: "/lovelace/climate"
+
+sump_pump_long_run:
+  name: "Sump Pump Running Too Long"
+  title: "⚠️ Basement — Sump Pump Alert"
+  message: >
+    Sump pump has been running continuously for over 2 minutes.
+    Check for stuck relay, check valve failure, or significant water intrusion.
+  done_message: "Sump pump has stopped running."
+  entity_id: binary_sensor.sump_pump_running_too_long
+  state: "on"
+  repeat:
+    - 3      # 3 min after first alert (5 min total runtime)
+    - 5      # then every 5 min
+  can_acknowledge: false
+  skip_first: false
+  notifiers:
+    - parents_phones
+  data:
+    tag: "sump-pump-long-run"
+    group: "basement"
+    push:
+      sound:
+        name: default
+        critical: 1
+        volume: 1.0
 
 hvac_bleach_reminder:
   name: "HVAC Condensate Line Needs Bleaching"
@@ -111,7 +136,7 @@ hvac_bleach_reminder:
   can_acknowledge: false
   skip_first: false
   notifiers:
-    - mobile_app_stephens_iphone
+    - mobile_app_stephen_iphone
   data:
     tag: "hvac-bleach-reminder"
     group: "hvac-maintenance"

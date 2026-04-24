@@ -10,6 +10,16 @@ hvac_last_bleached:
   has_time: false
   
 hvac_snooze_bleach_alert_until:
-  name: "HVAC Snooze Bleach Alert Until" 
+  name: "HVAC Snooze Bleach Alert Until"
   has_date: true
   has_time: true
+
+smoke_detector_snooze_until:
+  name: "Smoke Detector Snooze Until"
+  has_date: true
+  has_time: true
+
+smoke_detector_last_tested:
+  name: "Smoke Detector Last Tested"
+  has_date: true
+  has_time: false

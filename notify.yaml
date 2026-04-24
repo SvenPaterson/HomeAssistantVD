@@ -1,12 +1,11 @@
 - name: parents_phones
   platform: group
   services:
-    - service: mobile_app_stephens_iphone
+    - service: mobile_app_stephen_iphone
     - service: mobile_app_iphone_2  # Will update this after renaming
     
     
 - name: stephens_devices
   platform: group
   services:
-    - service: mobile_app_stephens_work_iphone
     - service: mobile_app_stephen_iphone

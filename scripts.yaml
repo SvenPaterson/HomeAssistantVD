@@ -1,149 +1,513 @@
+silence_doorbell:
+  alias: Silence Doorbell
+  mode: single
+  fields:
+    duration:
+      description: "15min, 60min, or rest_of_day"
+      example: "15min"
+  sequence:
+  - service: timer.start
+    target:
+      entity_id: timer.silence_doorbell
+    data:
+      duration: >
+        {% if duration == '60min' %}
+          00:60:00
+        {% elif duration == 'rest_of_day' %}
+          {{ (today_at('23:59:59') - now()).total_seconds() | int }}
+        {% else %}
+          00:15:00
+        {% endif %}
+  - service: notify.parents_phones
+    data:
+      message: >
+        Doorbell silenced for
+        {% if duration == '60min' %}60 minutes
+        {% elif duration == 'rest_of_day' %}the rest of the day
+        {% else %}15 minutes{% endif %}.
+unsilence_doorbell:
+  alias: Unsilence Doorbell
+  mode: single
+  sequence:
+  - service: timer.cancel
+    target:
+      entity_id: timer.silence_doorbell
+  - service: notify.parents_phones
+    data:
+      message: "Doorbell resumed."
 start_kids_wifi_timer:
   alias: Start Kids WiFi Timer
   mode: single
   fields:
     minutes:
       description: Duration in minutes
-      example: "15"
+      example: '15'
   sequence:
-    - service: timer.start
-      data:
-        entity_id: timer.kids_wifi_timer
-        duration:
-          minutes: "{{ minutes }}"
+  - service: timer.start
+    data:
+      entity_id: timer.kids_wifi_timer
+      duration:
+        minutes: '{{ minutes }}'
 cancel_kids_wifi_timer:
   alias: Cancel Kids WiFi Timer + Block
   mode: single
   sequence:
-    - service: timer.cancel
-      target:
-        entity_id: timer.kids_wifi_timer
+  - service: timer.cancel
+    target:
+      entity_id: timer.kids_wifi_timer
 toggle_kids_wifi_timer_pause:
   alias: Toggle Kids WiFi Timer Pause
   mode: single
   sequence:
-    - choose:
-        - conditions:
-            - condition: state
-              entity_id: timer.kids_wifi_timer
-              state: active
-          sequence:
-            - service: timer.pause
-              target:
-                entity_id: timer.kids_wifi_timer
-        - conditions:
-            - condition: state
-              entity_id: timer.kids_wifi_timer
-              state: paused
-          sequence:
-            - service: timer.start
-              target:
-                entity_id: timer.kids_wifi_timer
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: timer.kids_wifi_timer
+        state: active
+      sequence:
+      - service: timer.pause
+        target:
+          entity_id: timer.kids_wifi_timer
+    - conditions:
+      - condition: state
+        entity_id: timer.kids_wifi_timer
+        state: paused
+      sequence:
+      - service: timer.start
+        target:
+          entity_id: timer.kids_wifi_timer
 extend_kids_wifi_timer:
   alias: Extend Kids WiFi Timer by 15 Minutes
   mode: single
   sequence:
-    - condition: state
+  - condition: state
+    entity_id: timer.kids_wifi_timer
+    state:
+    - active
+    - paused
+  - service: timer.start
+    data:
       entity_id: timer.kids_wifi_timer
-      state:
-        - active
-        - paused
-    - service: timer.start
-      data:
-        entity_id: timer.kids_wifi_timer
-        duration:
-          "{% if is_state('timer.kids_wifi_timer', 'active') %}\n  {% set finishes
-          = state_attr('timer.kids_wifi_timer', 'finishes_at') %}\n  {% set finish_time
-          = as_timestamp(finishes) %}\n  {% set current_time = as_timestamp(now()) %}\n
-          \ {% set seconds_left = finish_time - current_time %}\n  {{ (seconds_left
-          + 900) | int }}\n{% else %}\n  {% set remaining = state_attr('timer.kids_wifi_timer',
-          'remaining') %}\n  {% if remaining %}\n    {% set parts = remaining.split(':')
-          %}\n    {% set seconds = parts[0]|int * 3600 + parts[1]|int * 60 + parts[2]|int
-          %}\n    {{ seconds + 900 }}\n  {% else %}\n    900\n  {% endif %}\n{% endif
-          %}"
+      duration: "{% if is_state('timer.kids_wifi_timer', 'active') %}\n  {% set finishes
+        = state_attr('timer.kids_wifi_timer', 'finishes_at') %}\n  {% set finish_time
+        = as_timestamp(finishes) %}\n  {% set current_time = as_timestamp(now()) %}\n
+        \ {% set seconds_left = finish_time - current_time %}\n  {{ (seconds_left
+        + 900) | int }}\n{% else %}\n  {% set remaining = state_attr('timer.kids_wifi_timer',
+        'remaining') %}\n  {% if remaining %}\n    {% set parts = remaining.split(':')
+        %}\n    {% set seconds = parts[0]|int * 3600 + parts[1]|int * 60 + parts[2]|int
+        %}\n    {{ seconds + 900 }}\n  {% else %}\n    900\n  {% endif %}\n{% endif
+        %}"
 llm_script_for_music_assistant_voice_requests:
   alias: LLM Script For Music Assistant Voice Requests
   use_blueprint:
     path: music-assistant/llm_voice_script.yaml
     input:
       default_player: media_player.living_room_hifi_airplay
-  description:
-    "This script is used to play music based on a voice request. The tool
+  description: 'This script is used to play music based on a voice request. The tool
     takes the following arguments: media_type, artist, album, media_id, radio_mode,
     area, shuffle. media_id, media_type, and shuffle are always required and must
     always be supplied as arguments to this tool. An area or Music Assistant media
     player can optionally be provided in the voice request as well. Use the parameters
     as described in the description of each parameter. Use this tool whenever the
-    user requests to play music."
+    user requests to play music.'
 adjust_screen_time:
-  alias: "Adjust Screen Time"
+  alias: Adjust Screen Time
   mode: single
   fields:
     kid:
-      description: "Entity ID of the kid's input number"
+      description: Entity ID of the kid's input number
       example: input_number.ben_screen_time
     amount:
-      description: "Minutes to add (negative = subtract)"
-      example: "5 or -15"
+      description: Minutes to add (negative = subtract)
+      example: 5 or -15
   sequence:
-    - service: input_number.set_value
-      target:
-        entity_id: "{{ kid }}"
-      data:
-        value: >
-          {% set current = states(kid) | int(0) %}
-          {% set new = current + amount %}
-          {% if new > 60 %} 60
-          {% elif new < 0 %} 0
-          {% else %} {{ new }}
-          {% endif %}
+  - service: input_number.set_value
+    target:
+      entity_id: '{{ kid }}'
+    data:
+      value: '{% set current = states(kid) | int(0) %} {% set new = current + amount
+        %} {% if new > 60 %} 60 {% elif new < 0 %} 0 {% else %} {{ new }} {% endif
+        %}
 
+        '
 start_screentime_timer:
   alias: Start Screen Time Timer (HA Timer + Voice PE Announcements)
   mode: restart
   fields:
     kid_name:
-      example: "Ben"
+      example: Ben
     minutes_entity:
-      example: "input_number.ben_screen_time"
+      example: input_number.ben_screen_time
     satellite_entity:
-      description: "Assist satellite entity for the target Voice PE"
+      description: Assist satellite entity for the target Voice PE
       example: assist_satellite.home_assistant_voice_0a1a5a_assist_satellite
     volume:
-      example: "100"
+      example: '100'
   sequence:
-    - variables:
-        mins: "{{ states(minutes_entity) | int(0) }}"
-        timer_entity: "timer.{{ kid_name.lower() }}_screentime"
-        vol: "{{ ((volume | default(80)) | float) / 100 }}"
-        mp_entity: "{{ satellite_entity.replace('assist_satellite', 'media_player').replace('_assist_satellite', '_media_player') }}"
-    - if:
+  - variables:
+      mins: '{{ states(minutes_entity) | int(0) }}'
+      timer_entity: timer.{{ kid_name.lower() }}_screentime
+      vol: '{{ ((volume | default(80)) | float) / 100 }}'
+      mp_entity: '{{ satellite_entity.replace(''assist_satellite'', ''media_player'').replace(''_assist_satellite'',
+        ''_media_player'') }}'
+  - if:
+    - condition: template
+      value_template: '{{ mins > 0 }}'
+    then:
+    - service: media_player.volume_set
+      target:
+        entity_id: '{{ mp_entity }}'
+      data:
+        volume_level: '{{ vol }}'
+    - service: timer.start
+      target:
+        entity_id: '{{ timer_entity }}'
+      data:
+        duration:
+          minutes: '{{ mins }}'
+    - service: assist_satellite.announce
+      target:
+        entity_id: '{{ satellite_entity }}'
+      data:
+        message: '{{ kid_name }}''s screen time timer started for {{ mins }} minute{{
+          ''s'' if mins != 1 else '''' }}. Timer will end at {{ (now() + timedelta(minutes=mins)).strftime(''%-I:%M
+          %p'') }}.'
+        media_player_entity_id: '{{ mp_entity }}'
+    else:
+    - service: persistent_notification.create
+      data:
+        title: Screen Timer
+        message: 'Refused to start: set {{ kid_name }}''s minutes above 0.'
+        notification_id: screentimer_error
+tv_remote_power_toggle:
+  alias: TV Remote - Power Toggle (selected target)
+  mode: single
+  variables:
+    target: '{{ states(''input_select.tv_remote_target'') | trim }}'
+    tv_map:
+      Family Room TV: media_player.family_room_lgtv
+      Basement TV: media_player.basement_tv
+    wol_map:
+      Family Room TV: A8:23:FE:10:C8:7E
+    basement_power_button: button.kitchenkickplatetrigger_samsung_tv_power_on_off
+    tv_entity: '{{ tv_map.get(target, '''') }}'
+    wol_mac: '{{ wol_map.get(target, '''') }}'
+    tv_state: '{{ states(tv_entity) if tv_entity else ''unknown'' }}'
+    is_on: '{{ tv_entity != '''' and tv_state not in [''off'',''unknown'',''unavailable'']
+      }}'
+  sequence:
+  - condition: template
+    value_template: '{{ tv_entity != '''' }}'
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ target == ''Basement TV'' }}'
+      sequence:
+      - service: button.press
+        target:
+          entity_id: '{{ basement_power_button }}'
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: '{{ states(tv_entity) in [''idle'',''paused'',''playing'']
+              }}
+
+              '
+          sequence:
+          - service: media_player.turn_off
+            target:
+              entity_id: '{{ tv_entity }}'
+    default:
+    - choose:
+      - conditions:
         - condition: template
-          value_template: "{{ mins > 0 }}"
-      then:
-        # Set media player volume
-        - service: media_player.volume_set
-          target: { entity_id: "{{ mp_entity }}"}
-          data: { volume_level: "{{ vol }}" }
-        
-        # Start HA timer helper
-        - service: timer.start
+          value_template: '{{ is_on }}'
+        sequence:
+        - service: media_player.turn_off
           target:
-            entity_id: "{{ timer_entity }}"
-          data:
-            duration:
-              minutes: "{{ mins }}"
-        
-        # Announce timer start on specific Voice PE device
-        - service: assist_satellite.announce
+            entity_id: '{{ tv_entity }}'
+      default:
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: '{{ wol_mac != '''' }}'
+          sequence:
+          - service: wake_on_lan.send_magic_packet
+            data:
+              mac: '{{ wol_mac }}'
+        default:
+        - service: media_player.turn_on
           target:
-            entity_id: "{{ satellite_entity }}"
-          data:
-            message: "{{ kid_name }}'s screen time timer started for {{ mins }} minute{{ 's' if mins != 1 else '' }}. Timer will end at {{ (now() + timedelta(minutes=mins)).strftime('%-I:%M %p') }}."
-            media_player_entity_id: "{{ mp_entity }}"
-      else:
-        - service: persistent_notification.create
-          data:
-            title: "Screen Timer"
-            message: "Refused to start: set {{ kid_name }}'s minutes above 0."
-            notification_id: screentimer_error
+            entity_id: '{{ tv_entity }}'
+tv_remote_set_target_and_hide:
+  alias: TV Remote - Set target and hide picker
+  mode: single
+  fields:
+    option:
+      description: Option string exactly as in input_select.tv_remote_target
+  sequence:
+  - service: input_select.select_option
+    data:
+      entity_id: input_select.tv_remote_target
+      option: '{{ option }}'
+  - service: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.show_tv_target_picker
+tv_remote_play_pause_context:
+  alias: TV Remote - Play/Pause (context by active source)
+  mode: single
+  variables:
+    target: '{{ states(''input_select.tv_remote_target'') | trim }}'
+    display_map:
+      Family Room TV: media_player.family_room_lgtv
+      Basement TV: media_player.basement_tv
+    display: '{{ display_map.get(target, '''') }}'
+    source: "{% if target == 'Basement TV' %}\n  Chromecast\n{% else %}\n  {{ state_attr(display,
+      'source') if display else '' }}\n{% endif %}\n"
+    player_map:
+      Family Room TV:
+        Chromecast: media_player.family_room_tv
+        Xbox: media_player.office_xbox
+      Basement TV:
+        Chromecast: media_player.basement_tv
+    player: '{% set per_tv = player_map.get(target, {}) %} {{ per_tv.get(source, '''')
+      }}
+
+      '
+  sequence:
+  - condition: template
+    value_template: '{{ display != '''' }}'
+  - service: logbook.log
+    data:
+      name: TV Remote
+      message: target='{{ target }}' source='{{ source }}' player='{{ player }}'
+  - condition: template
+    value_template: '{{ player != '''' }}'
+  - service: media_player.media_play_pause
+    target:
+      entity_id: '{{ player }}'
+tv_remote_select_source:
+  alias: TV Remote - Select Source (selected target)
+  mode: single
+  fields:
+    source:
+      description: Friendly source name (Xbox/Chromecast/Switch)
+  variables:
+    target: '{{ states(''input_select.tv_remote_target'') | trim }}'
+    tv_map:
+      Family Room TV: media_player.family_room_lgtv
+      Basement TV: media_player.basement_tv
+    tv_entity: '{{ tv_map.get(target, '''') }}'
+  sequence:
+  - condition: template
+    value_template: '{{ tv_entity != '''' and source is defined }}'
+  - service: media_player.select_source
+    target:
+      entity_id: '{{ tv_entity }}'
+    data:
+      source: '{{ source }}'
+tv_remote_volume_down:
+  alias: TV Remote - Volume Down (Router)
+  mode: single
+  sequence:
+  - variables:
+      fr_lgtv: media_player.family_room_lgtv
+      fr_cast: media_player.family_room_tv
+      bs_cast: media_player.basement_tv
+      fr_source: '{{ state_attr(fr_lgtv, ''source'') | default('''') }}'
+      fr_is_chromecast: '{{ fr_source == ''Chromecast'' }}'
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: input_boolean.show_soundbar_controls
+        state: 'on'
+      sequence:
+      - service: button.press
+        target:
+          entity_id: button.ir_blaster_ht_ct150_volume_down
+    - conditions:
+      - condition: state
+        entity_id: input_select.tv_remote_target
+        state: Basement TV
+      sequence:
+      - service: media_player.volume_down
+        target:
+          entity_id: '{{ bs_cast }}'
+    - conditions:
+      - condition: state
+        entity_id: input_select.tv_remote_target
+        state: Family Room TV
+      - condition: template
+        value_template: '{{ fr_is_chromecast }}'
+      sequence:
+      - service: media_player.volume_down
+        target:
+          entity_id: '{{ fr_cast }}'
+    default:
+    - service: button.press
+      target:
+        entity_id: button.ir_blaster_ht_ct150_volume_down
+tv_remote_volume_up:
+  alias: TV Remote - Volume Up (Router)
+  mode: single
+  sequence:
+  - variables:
+      fr_lgtv: media_player.family_room_lgtv
+      fr_cast: media_player.family_room_tv
+      bs_cast: media_player.basement_tv
+      fr_source: '{{ state_attr(fr_lgtv, ''source'') | default('''') }}'
+      fr_is_chromecast: '{{ fr_source == ''Chromecast'' }}'
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: input_boolean.show_soundbar_controls
+        state: 'on'
+      sequence:
+      - service: button.press
+        target:
+          entity_id: button.ir_blaster_ht_ct150_volume_up
+    - conditions:
+      - condition: state
+        entity_id: input_select.tv_remote_target
+        state: Basement TV
+      sequence:
+      - service: media_player.volume_up
+        target:
+          entity_id: '{{ bs_cast }}'
+    - conditions:
+      - condition: state
+        entity_id: input_select.tv_remote_target
+        state: Family Room TV
+      - condition: template
+        value_template: '{{ fr_is_chromecast }}'
+      sequence:
+      - service: media_player.volume_up
+        target:
+          entity_id: '{{ fr_cast }}'
+    default:
+    - service: button.press
+      target:
+        entity_id: button.ir_blaster_ht_ct150_volume_up
+tv_remote_mute_toggle:
+  alias: TV Remote - Mute Toggle (Router)
+  mode: single
+  sequence:
+  - variables:
+      fr_lgtv: media_player.family_room_lgtv
+      fr_cast: media_player.family_room_tv
+      bs_cast: media_player.basement_tv
+      fr_source: '{{ state_attr(fr_lgtv, ''source'') | default('''') }}'
+      fr_is_chromecast: '{{ fr_source == ''Chromecast'' }}'
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: input_boolean.show_soundbar_controls
+        state: 'on'
+      sequence:
+      - service: button.press
+        target:
+          entity_id: button.ir_blaster_ht_ct150_mute
+    - conditions:
+      - condition: state
+        entity_id: input_select.tv_remote_target
+        state: Basement TV
+      sequence:
+      - service: media_player.volume_mute
+        target:
+          entity_id: '{{ bs_cast }}'
+        data:
+          is_volume_muted: '{{ not (state_attr(bs_cast, ''is_volume_muted'') | default(false))
+            }}'
+    - conditions:
+      - condition: state
+        entity_id: input_select.tv_remote_target
+        state: Family Room TV
+      - condition: template
+        value_template: '{{ fr_is_chromecast }}'
+      sequence:
+      - service: media_player.volume_mute
+        target:
+          entity_id: '{{ fr_cast }}'
+        data:
+          is_volume_muted: '{{ not (state_attr(fr_cast, ''is_volume_muted'') | default(false))
+            }}'
+    default:
+    - service: button.press
+      target:
+        entity_id: button.ir_blaster_ht_ct150_mute
+test_sharkclean_pro_session_dock:
+  alias: 'Test: SharkClean Pro session + dock'
+  mode: single
+  sequence:
+  - data:
+      command: Talk to SharkClean Pro
+    action: google_assistant_sdk.send_text_command
+  - delay: 00:00:02
+  - data:
+      command: Send my robot to the base
+    action: google_assistant_sdk.send_text_command
+  description: ''
+wake_stephen_s_office_pc:
+  sequence:
+  - action: wake_on_lan.send_magic_packet
+    metadata: {}
+    data:
+      broadcast_port: 9
+      mac: 10:FF:E0:96:3B:50
+  alias: Wake Stephen's Office PC
+  description: ''
+bank_of_dad_apply_transaction:
+  alias: Bank of Dad - Apply transaction
+  mode: single
+  sequence:
+  - variables:
+      who: '{{ states(''input_select.bank_tx_who'') }}'
+      tx_type: '{{ states(''input_select.bank_tx_type'') }}'
+      amt: '{{ states(''input_number.bank_tx_amount'')|float(0) }}'
+      entity: '{% if who == ''Ben'' %}input_number.ben_balance {% elif who == ''Lewis''
+        %}input_number.lewis_balance {% else %}input_number.ben_balance{% endif %}
+
+        '
+      current: '{{ states(entity)|float(0) }}'
+      new_value: "{% if tx_type == 'Deposit' %}\n  {{ (current + amt) | round(2) }}\n{%
+        else %}\n  {{ max(current - amt, 0) | round(2) }}\n{% endif %}\n"
+      note: '{{ now().strftime(''%Y-%m-%d %H:%M'') }} — {{ who }} — {{ tx_type }}
+        ${{ ''%.2f''|format(amt) }} → ${{ ''%.2f''|format(new_value) }}
+
+        '
+  - condition: template
+    value_template: '{{ amt > 0 }}'
+  - target:
+      entity_id: '{{ entity }}'
+    data:
+      value: '{{ new_value }}'
+    action: input_number.set_value
+  - target:
+      entity_id: input_text.bank_of_dad_last_tx
+    data:
+      value: '{{ note }}'
+    action: input_text.set_value
+  - data:
+      name: Bank of Dad
+      message: '{{ note }}'
+    action: logbook.log
+  - target:
+      entity_id: input_number.bank_tx_amount
+    data:
+      value: 0
+    action: input_number.set_value
+  - data:
+      title: Bank of Dad
+      message: '{{ note }}'
+    action: notify.parents_phones
+  description: ''
+cast_bank_of_dad:
+  alias: Cast Bank of Dad to TV
+  sequence:
+  - data:
+      entity_id: media_player.family_room_lgtv
+      command: system.launcher/open
+      payload:
+        target: http://192.168.1.100:8123/lovelace/bank-of-dad
+    action: webostv.command
+  mode: single

@@ -33,6 +33,27 @@ sump_pump_last_runtime:
   step: 1
   unit_of_measurement: "secs"
 
+sump_pump_rolling_avg_duration:
+  name: "Sump Pump Rolling Avg Duration (EMA)"
+  min: 0
+  max: 100000
+  step: 0.1
+  unit_of_measurement: "secs"
+
+sump_pump_period_activations:
+  name: "Sump Pump Period Activations"
+  min: 0
+  max: 10000
+  step: 1
+  unit_of_measurement: "#"
+
+sump_pump_period_runtime:
+  name: "Sump Pump Period Runtime"
+  min: 0
+  max: 100000
+  step: 1
+  unit_of_measurement: "secs"
+
 # Historical temperature storage for hot day tracking
 yesterday_max_temp:
   name: "Yesterday Max Temperature"

@@ -9,9 +9,9 @@
   - condition: or
     conditions:
     - condition: device
-      device_id: bda487d28bc8ebebf9966a016ae6fcde
+      device_id: 8ac8e469b09f842f2a928c60e0b7c960
       domain: device_tracker
-      entity_id: 68a961430eb7eebf9c5ff8be65c14878
+      entity_id: 30cee7e6761065a5c766ca1d9d7a24a5
       type: is_home
     - condition: device
       device_id: ce09a92f7cfc8eed6ee5a25a2ac70835
@@ -71,6 +71,7 @@
       - action: light.turn_off
         target:
           area_id: porch
+          entity_id: light.driveway_light
         data: {}
     - conditions:
       - condition: trigger
@@ -80,7 +81,9 @@
         data: {}
         target:
           area_id: porch
-          entity_id: light.hall_table_lamp
+          entity_id:
+          - light.hall_lamp
+          - light.driveway_light
   mode: single
 - id: '1673891966542'
   alias: 'FAMILY ROOM: Ping TV'
@@ -206,7 +209,7 @@
           entity_id: media_player.family_room_lgtv
           state: 'off'
       sequence:
-      - action: notify.family_room_lgtv
+      - action: notify.lg_webos_tv_50uk6300pue
         data:
           message: Washing machine is finished!
   mode: single
@@ -299,7 +302,7 @@
   trigger: []
   condition: []
   action:
-  - service: notify.mobile_app_stephens_iphone
+  - service: notify.mobile_app_stephen_iphone
     data:
       title: Washing Done
       message: Your washing is ready
@@ -323,7 +326,7 @@
       seconds: 0
       milliseconds: 0
     continue_on_timeout: false
-  - service: notify.mobile_app_stephens_iphone
+  - service: notify.mobile_app_stephen_iphone
     data:
       message: will remind you again in 30mins to get laundry
   mode: single
@@ -434,12 +437,12 @@
   description: sets the guest users location to home if toggled on and vice versa
   trigger:
   - platform: state
-    entity_id: input_boolean.guest
+    entity_id: input_boolean.guest_staying
     from: 'off'
     to: 'on'
     id: guest-here
   - platform: state
-    entity_id: input_boolean.guest
+    entity_id: input_boolean.guest_staying
     from: 'on'
     to: 'off'
     id: guest-gone
@@ -580,7 +583,7 @@
       - condition: trigger
         id: schedule_on
       - condition: state
-        entity_id: input_boolean.guest
+        entity_id: input_boolean.guest_staying
         state: 'on'
       sequence:
       - service: climate.turn_on
@@ -729,7 +732,7 @@
                 name: default
                 critical: 1
                 volume: 1
-        action: notify.mobile_app_stephens_iphone
+        action: notify.mobile_app_stephen_iphone
       - action: notify.mobile_app_iphone_2
         metadata: {}
         data:
@@ -758,34 +761,6 @@
     target:
       entity_id: scene.return_to_normal_volume
     data: {}
-  mode: single
-- id: '1726002967988'
-  alias: 'SYSTEM: Water Tank Sensor Low Batt'
-  description: ''
-  trigger:
-  - type: bat_low
-    platform: device
-    device_id: 2ab23a7631af7a31eeea156c467b872f
-    entity_id: 8551d486e581903f930c0ee26e7d43ee
-    domain: binary_sensor
-  condition:
-  - condition: time
-    after: '18:00:00'
-    before: '18:30:00'
-    weekday:
-    - sun
-    - mon
-    - tue
-    - wed
-    - thu
-    - sat
-    - fri
-  action:
-  - data:
-      message: Water Tank Leak Sensor Battery is low. Replace batteries soon!
-      title: Low Battery Warning
-      data: {}
-    action: notify.mobile_app_stephens_iphone
   mode: single
 - id: '1734216548855'
   alias: 'LIGHT SWITCH: Family Room Main Lights'
@@ -900,8 +875,8 @@
   mode: parallel
 - id: '1735571609904'
   alias: 'BASEMENT: Log Sump Pump Activation Time'
-  description: 'Sets the datetime when the sump pump sensor triggers, is needed for
-    "BASEMENT: Calculate Pump Runtime"'
+  description: 'Sets the datetime when the sump pump sensor triggers, sends first-run
+    alert if 24+ hours since last activation'
   triggers:
   - trigger: state
     entity_id:
@@ -910,6 +885,17 @@
     to: 'on'
   conditions: []
   actions:
+  - variables:
+      last_started: "{{ state_attr('input_datetime.sump_pump_last_started', 'timestamp') | float(0) }}"
+      hours_since: "{{ ((now().timestamp() - last_started) / 3600) | round(1) }}"
+  - if:
+    - condition: template
+      value_template: "{{ hours_since >= 24 }}"
+    then:
+    - action: notify.mobile_app_stephen_iphone
+      data:
+        title: Basement
+        message: "Sump pump activated for the first time in {{ hours_since }} hours."
   - target:
       entity_id: input_datetime.sump_pump_last_started
     data:
@@ -918,8 +904,8 @@
   mode: single
 - id: '1735572810967'
   alias: 'BASEMENT: Calculate Pump Runtime'
-  description: Add new activation duration to both daily and lifetime total pump runtime
-    input_numbers as needed
+  description: Add new activation duration to daily/lifetime/period totals, update
+    rolling average, and alert on long runs (>15s)
   triggers:
   - entity_id: binary_sensor.sump_pump_active
     from: 'on'
@@ -930,11 +916,14 @@
       start_time: '{{ state_attr(''input_datetime.sump_pump_last_started'', ''timestamp'')
         | float }}'
       end_time: '{{ now().timestamp() | float }}'
+      duration_secs: '{{ (end_time - start_time) | round(0) }}'
       runtime: '{{ (end_time - start_time) / 3600 | round(1) }}'
+      old_avg: '{{ states(''input_number.sump_pump_rolling_avg_duration'') | float(0) }}'
+      new_avg: '{{ (0.9 * old_avg + 0.1 * duration_secs) | round(1) if old_avg > 0 else duration_secs | round(1) }}'
   - target:
       entity_id: input_number.sump_pump_last_runtime
     data:
-      value: '{{ (end_time - start_time) | round(0) }}'
+      value: '{{ duration_secs }}'
     action: input_number.set_value
   - target:
       entity_id: input_number.sump_pump_total_hrs
@@ -942,6 +931,28 @@
       value: '{{ (states(''input_number.sump_pump_total_hrs'') | float) + runtime
         }}'
     action: input_number.set_value
+  - target:
+      entity_id: input_number.sump_pump_period_runtime
+    data:
+      value: >
+        {{ (states('input_number.sump_pump_period_runtime') | float) +
+           duration_secs }}
+    action: input_number.set_value
+  - target:
+      entity_id: input_number.sump_pump_rolling_avg_duration
+    data:
+      value: '{{ new_avg }}'
+    action: input_number.set_value
+  - if:
+    - condition: template
+      value_template: '{{ duration_secs | float > 15 }}'
+    then:
+    - action: notify.mobile_app_stephen_iphone
+      data:
+        title: "⚠️ Basement — Long Pump Run"
+        message: >
+          Sump pump ran for {{ duration_secs }}s (rolling avg: {{ new_avg }}s).
+          Possible significant water intrusion.
   mode: single
 - id: '1735579149526'
   alias: 'BASEMENT: Count Sump Pump Activations'
@@ -958,6 +969,9 @@
     action: input_number.increment
   - target:
       entity_id: input_number.sump_pump_lifetime_activations
+    action: input_number.increment
+  - target:
+      entity_id: input_number.sump_pump_period_activations
     action: input_number.increment
   mode: single
 - id: '1735579346586'
@@ -978,24 +992,102 @@
       value: 0
     action: input_number.set_value
   mode: single
-- alias: 'BASEMENT: Sump Pump Activation Notification'
-  description: Notify phone if sump pump activates
+- id: d887cdb930f94c388634f9a11e92a545
+  alias: 'BASEMENT: Sump Pump Morning Summary (Overnight)'
+  description: Summarize overnight sump pump activity (7PM-7AM) and reset period counters
   triggers:
-  - entity_id:
-    - binary_sensor.sump_pump_active
-    from: 'on'
-    to: 'off'
-    trigger: state
+  - trigger: time
+    at: '07:00:00'
+  conditions:
+  - condition: template
+    value_template: "{{ states('input_number.sump_pump_period_activations') | int > 0 }}"
   actions:
-  - delay:
-      seconds: 5
-  - action: notify.mobile_app_stephens_iphone
+  - variables:
+      activations: "{{ states('input_number.sump_pump_period_activations') | int }}"
+      runtime: "{{ states('input_number.sump_pump_period_runtime') | int }}"
+      avg: "{{ (runtime / activations) | round(0) if activations > 0 else 0 }}"
+      rolling_avg: "{{ states('input_number.sump_pump_rolling_avg_duration') | round(1) }}"
+  - action: notify.mobile_app_stephen_iphone
     data:
-      title: Basement
-      message: Sump pump just ran for {{ states('input_number.sump_pump_last_runtime')
-        }} secs
+      title: Basement — Overnight Summary
+      message: >
+        Sump pump ran {{ activations }} time{{ 's' if activations != 1 else '' }}
+        overnight ({{ runtime }}s total, avg {{ avg }}s per run, rolling avg {{ rolling_avg }}s).
+  - action: input_number.set_value
+    target:
+      entity_id: input_number.sump_pump_period_activations
+    data:
+      value: 0
+  - action: input_number.set_value
+    target:
+      entity_id: input_number.sump_pump_period_runtime
+    data:
+      value: 0
   mode: single
-  id: d887cdb930f94c388634f9a11e92a545
+- id: 'sump_pump_midday_summary'
+  alias: 'BASEMENT: Sump Pump Midday Summary (Morning)'
+  description: Summarize morning sump pump activity (7AM-12PM) and reset period counters
+  triggers:
+  - trigger: time
+    at: '12:00:00'
+  conditions:
+  - condition: template
+    value_template: "{{ states('input_number.sump_pump_period_activations') | int > 0 }}"
+  actions:
+  - variables:
+      activations: "{{ states('input_number.sump_pump_period_activations') | int }}"
+      runtime: "{{ states('input_number.sump_pump_period_runtime') | int }}"
+      avg: "{{ (runtime / activations) | round(0) if activations > 0 else 0 }}"
+      rolling_avg: "{{ states('input_number.sump_pump_rolling_avg_duration') | round(1) }}"
+  - action: notify.mobile_app_stephen_iphone
+    data:
+      title: Basement — Morning Summary
+      message: >
+        Sump pump ran {{ activations }} time{{ 's' if activations != 1 else '' }}
+        this morning ({{ runtime }}s total, avg {{ avg }}s per run, rolling avg {{ rolling_avg }}s).
+  - action: input_number.set_value
+    target:
+      entity_id: input_number.sump_pump_period_activations
+    data:
+      value: 0
+  - action: input_number.set_value
+    target:
+      entity_id: input_number.sump_pump_period_runtime
+    data:
+      value: 0
+  mode: single
+- id: 'sump_pump_evening_summary'
+  alias: 'BASEMENT: Sump Pump Evening Summary (Afternoon)'
+  description: Summarize afternoon sump pump activity (12PM-7PM) and reset period counters
+  triggers:
+  - trigger: time
+    at: '19:00:00'
+  conditions:
+  - condition: template
+    value_template: "{{ states('input_number.sump_pump_period_activations') | int > 0 }}"
+  actions:
+  - variables:
+      activations: "{{ states('input_number.sump_pump_period_activations') | int }}"
+      runtime: "{{ states('input_number.sump_pump_period_runtime') | int }}"
+      avg: "{{ (runtime / activations) | round(0) if activations > 0 else 0 }}"
+      rolling_avg: "{{ states('input_number.sump_pump_rolling_avg_duration') | round(1) }}"
+  - action: notify.mobile_app_stephen_iphone
+    data:
+      title: Basement — Afternoon Summary
+      message: >
+        Sump pump ran {{ activations }} time{{ 's' if activations != 1 else '' }}
+        this afternoon ({{ runtime }}s total, avg {{ avg }}s per run, rolling avg {{ rolling_avg }}s).
+  - action: input_number.set_value
+    target:
+      entity_id: input_number.sump_pump_period_activations
+    data:
+      value: 0
+  - action: input_number.set_value
+    target:
+      entity_id: input_number.sump_pump_period_runtime
+    data:
+      value: 0
+  mode: single
 - id: '1745068099603'
   alias: 'FAMILY ROOM: Camera Privacy Mode Timer'
   description: ''
@@ -1032,7 +1124,7 @@
   - service: alert.turn_off
     target:
       entity_id: alert.irrigation_needed
-  - service: notify.mobile_app_stephens_iphone
+  - service: notify.mobile_app_stephen_iphone
     data:
       message: ✅ Marked as watered - alert cleared for 3 days
       tag: irrigation-alert
@@ -1240,12 +1332,12 @@
           entity_id: input_datetime.hvac_snooze_bleach_alert_until
         data:
           datetime: '1970-01-01 00:00:00'
-      - service: notify.mobile_app_stephens_iphone
+      - service: notify.mobile_app_stephen_iphone
         data:
           message: clear_notification
           data:
             tag: hvac-bleach-reminder
-      - service: notify.mobile_app_stephens_iphone
+      - service: notify.mobile_app_stephen_iphone
         data:
           message: HVAC drain marked as bleached. Next reminder in 4 weeks.
     - conditions:
@@ -1253,7 +1345,10 @@
         value_template: '{{ trigger.event.data.action == ''hvac_remind_home_today''
           }}'
       sequence:
-      - service: notify.mobile_app_stephens_iphone
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.hvac_remind_when_home
+      - service: notify.mobile_app_stephen_iphone
         data:
           message: I'll remind you when you get home today.
     - conditions:
@@ -1270,7 +1365,7 @@
             days_until_saturday = 7 %}\n{% endif %} {% set next_saturday = today +
             timedelta(days=days_until_saturday) %} {{ next_saturday.strftime('%Y-%m-%d')
             }} 08:00:00\n"
-      - service: notify.mobile_app_stephens_iphone
+      - service: notify.mobile_app_stephen_iphone
         data:
           message: HVAC reminder snoozed until next Saturday at 8 AM.
 - id: hvac_remind_when_home_today
@@ -1281,13 +1376,14 @@
     entity_id: person.stephengarden
     to: home
   condition:
-  - condition: template
-    value_template: "{% set last_action_time = state_attr('automation.hvac_notification_actions',
-      'last_triggered') %} {% if last_action_time %}\n  {% set last_action_date =
-      last_action_time.date() %}\n  {% set today = now().date() %}\n  {{ last_action_date
-      == today }}\n{% else %}\n  false\n{% endif %}\n"
+  - condition: state
+    entity_id: input_boolean.hvac_remind_when_home
+    state: 'on'
   action:
-  - service: notify.mobile_app_stephens_iphone
+  - service: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.hvac_remind_when_home
+  - service: notify.mobile_app_stephen_iphone
     data:
       message: Welcome home! Don't forget to bleach the HVAC condensate line.
       data:
@@ -1415,18 +1511,595 @@
           volume_level: 0.4
         action: media_player.volume_set
   mode: single
-- id: battery_notification_actions
-  alias: 'BATTERY: Handle Notification Actions'
-  description: Handle battery notification button presses
+- id: public_ip_change_notify
+  alias: Notify when public IP changes
   triggers:
-  - platform: event
-    event_type: mobile_app_notification_action
-    event_data:
-      action: BATTERY_CHANGED
-  conditions: []
+  - entity_id: sensor.external_ip
+    trigger: state
+  conditions:
+  - condition: template
+    value_template: "{{ trigger.from_state is not none and\n  trigger.to_state is
+      not none and\n  trigger.from_state.state not in ['unknown','unavailable','none','']
+      and\n  trigger.to_state.state not in ['unknown','unavailable','none',''] and\n
+      \ trigger.from_state.state != trigger.to_state.state }}\n"
   actions:
-  - action: notify.mobile_app_stephens_iphone
+  - data:
+      title: WAN Public IP changed
+      message: 'Old: {{ trigger.from_state.state }} → New: {{ trigger.to_state.state
+        }}. Reload Nord SmartDNS'
+    action: notify.mobile_app_stephen_iphone
+  mode: single
+- id: '1765044327156'
+  alias: Family Room TV Input Manager
+  description: >
+    Manages Family Room LG TV input switching based on Chromecast and Xbox state.
+    Wakes TV when a device activates, switches inputs when devices change,
+    turns off TV when last device goes inactive (unless source is Switch).
+  triggers:
+  - trigger: state
+    entity_id: media_player.family_room_tv
+    from:
+    - 'off'
+    - unknown
+    - unavailable
+    to:
+    - idle
+    - buffering
+    - playing
+    id: cast_on
+  - trigger: state
+    entity_id: media_player.family_room_tv
+    from: idle
+    to:
+    - playing
+    - buffering
+    id: cast_playing
+  - trigger: state
+    entity_id: media_player.family_room_tv
+    to: 'off'
+    for: "00:00:10"
+    id: cast_stop
+  - trigger: state
+    entity_id: remote.office_xbox
+    to: 'on'
+    id: xbox_on
+  - trigger: state
+    entity_id: remote.office_xbox
+    to: 'off'
+    for: "00:00:05"
+    id: xbox_off
+  actions:
+  - choose:
+    # ── DEVICE ACTIVATED: wake TV + select source ──
+    - conditions:
+      - condition: template
+        value_template: "{{ trigger.id in ['cast_on', 'cast_playing', 'xbox_on'] }}"
+      sequence:
+      - variables:
+          desired_source: "{{ 'Chromecast' if trigger.id in ['cast_on', 'cast_playing'] else 'Xbox' }}"
+      # Skip if TV already on the correct source
+      - condition: template
+        value_template: >
+          {{ not (is_state('media_player.family_room_lgtv', 'on')
+                  and state_attr('media_player.family_room_lgtv', 'source') == desired_source) }}
+      # For cast_on (idle): only steal focus from another input if TV is off.
+      # cast_playing (idle→playing/buffering) always steals focus since it's active casting.
+      - condition: template
+        value_template: >
+          {{ trigger.id != 'cast_on'
+             or not is_state('media_player.family_room_lgtv', 'on') }}
+      # Wake TV via WOL
+      - action: wake_on_lan.send_magic_packet
+        data:
+          mac: A8:23:FE:10:C8:7E
+      - wait_template: >
+          {{ states('media_player.family_room_lgtv') not in ['unknown', 'unavailable'] }}
+        timeout: 00:00:20
+        continue_on_timeout: true
+      # Retry source selection up to 4 times
+      - repeat:
+          count: 4
+          sequence:
+          - action: media_player.select_source
+            target:
+              entity_id: media_player.family_room_lgtv
+            data:
+              source: "{{ desired_source }}"
+          - delay: 00:00:02
+          - condition: template
+            value_template: >
+              {{ state_attr('media_player.family_room_lgtv', 'source') == desired_source }}
+
+    # ── CHROMECAST STOPPED: switch to Xbox or turn off TV ──
+    - conditions:
+      - condition: trigger
+        id: cast_stop
+      sequence:
+      - delay: 00:00:03
+      # Only act if TV is still on
+      - condition: state
+        entity_id: media_player.family_room_lgtv
+        state: 'on'
+      - choose:
+        # Xbox is on → switch to Xbox
+        - conditions:
+          - condition: state
+            entity_id: remote.office_xbox
+            state: 'on'
+          sequence:
+          - action: media_player.select_source
+            target:
+              entity_id: media_player.family_room_lgtv
+            data:
+              source: Xbox
+        default:
+        # No Xbox active — only turn off TV if source is a tracked input
+        - condition: template
+          value_template: >
+            {{ state_attr('media_player.family_room_lgtv', 'source') in ['Chromecast', 'Xbox'] }}
+        - action: media_player.turn_off
+          target:
+            entity_id: media_player.family_room_lgtv
+
+    # ── XBOX TURNED OFF: switch to Chromecast or turn off TV ──
+    - conditions:
+      - condition: trigger
+        id: xbox_off
+      sequence:
+      # Confirm Xbox is still off
+      - condition: state
+        entity_id: remote.office_xbox
+        state: 'off'
+      # Only act if TV is still on
+      - condition: state
+        entity_id: media_player.family_room_lgtv
+        state: 'on'
+      - choose:
+        # Chromecast is active → switch to Chromecast
+        - conditions:
+          - condition: template
+            value_template: >
+              {{ states('media_player.family_room_tv') in ['idle', 'buffering', 'playing'] }}
+          sequence:
+          - repeat:
+              count: 4
+              sequence:
+              - action: media_player.select_source
+                target:
+                  entity_id: media_player.family_room_lgtv
+                data:
+                  source: Chromecast
+              - delay: 00:00:02
+              - condition: template
+                value_template: >
+                  {{ state_attr('media_player.family_room_lgtv', 'source') == 'Chromecast' }}
+        default:
+        # No Chromecast active — only turn off TV if source is a tracked input
+        - condition: template
+          value_template: >
+            {{ state_attr('media_player.family_room_lgtv', 'source') in ['Chromecast', 'Xbox'] }}
+        - action: media_player.turn_off
+          target:
+            entity_id: media_player.family_room_lgtv
+  mode: restart
+- id: '1744334400000'
+  alias: LGTV Off - Stop Chromecast
+  description: When the LG TV turns off, stop the Chromecast to prevent it casting to nothing
+  triggers:
+  - trigger: state
+    entity_id: media_player.family_room_lgtv
+    to: 'off'
+  conditions:
+  - condition: template
+    value_template: >
+      {{ states('media_player.family_room_tv') not in ['off', 'unknown', 'unavailable'] }}
+  actions:
+  - action: media_player.turn_off
+    target:
+      entity_id: media_player.family_room_tv
+  mode: single
+- id: '1744334400001'
+  alias: Family Room TV - Pause Media on Input Switch
+  description: >
+    When the TV input source changes, pause whatever was playing on the
+    previous source so it doesn't keep running in the background.
+  triggers:
+  - trigger: state
+    entity_id: media_player.family_room_lgtv
+    attribute: source
+  conditions:
+  - condition: state
+    entity_id: media_player.family_room_lgtv
+    state: 'on'
+  actions:
+  - variables:
+      old_source: "{{ trigger.from_state.attributes.source | default('') }}"
+  # Pause Chromecast if we switched away from it
+  - if:
+    - condition: template
+      value_template: >
+        {{ old_source == 'Chromecast'
+           and states('media_player.family_room_tv') in ['playing', 'buffering'] }}
+    then:
+    - action: media_player.media_pause
+      target:
+        entity_id: media_player.family_room_tv
+  # Turn off Xbox if we switched away from it
+  - if:
+    - condition: template
+      value_template: >
+        {{ old_source == 'Xbox'
+           and is_state('remote.office_xbox', 'on') }}
+    then:
+    - action: remote.turn_off
+      target:
+        entity_id: remote.office_xbox
+  mode: single
+- id: '1766013248451'
+  alias: Living Room Remote Control
+  description: Ascribes functions and targets to each button
+  use_blueprint:
+    path: duittenb/shelly-blu-rc-4-button-bluetooth-remote-djf3.yaml
+    input:
+      your_remote: 600b4e0c05a0c96ca7541623a341e14e
+      input_button1_double:
+      - action: light.toggle
+        metadata: {}
+        data: {}
+        target:
+          entity_id: light.living_room_floor_lamp
+      input_button1_short:
+      - action: light.toggle
+        metadata: {}
+        target:
+          entity_id: light.all_living_room_lights
+        data: {}
+      input_button2_short:
+      - action: light.toggle
+        metadata: {}
+        target:
+          entity_id: light.living_room_reading_lamp
+        data: {}
+      input_button3_short:
+      - action: light.toggle
+        metadata: {}
+        target:
+          entity_id: light.living_room_table_lamp
+        data: {}
+      input_button4_short:
+      - action: light.toggle
+        metadata: {}
+        target:
+          entity_id: light.living_room_bookcase_lamp
+        data: {}
+      input_button4_double:
+      - action: light.toggle
+        metadata: {}
+        target:
+          entity_id: light.fam_rm_christmas_tree
+        data: {}
+      input_button2_double:
+      - action: light.toggle
+        metadata: {}
+        target:
+          entity_id: light.dining_room_all_lights
+        data: {}
+- id: '1766014629046'
+  alias: Low Battery Notifications & Actions
+  description: ''
+  use_blueprint:
+    path: Blackshome/low-battery-notifications-and-actions.yaml
+    input:
+      include_time: time_enabled
+      time: '17:30:00'
+      include_easy_notify: enable_easy_notify
+      notify_device:
+      - 8ac8e469b09f842f2a928c60e0b7c960
+      notify_tag: low-batteries
+      exclude_sensors:
+        entity_id:
+        - sensor.thermostat_humidifier_remaining
+        - sensor.lindsay_s_iphone_battery_level
+        - sensor.lindsay_s_iphone_watch_battery
+        - sensor.stephen_iphone_battery_level
+        - sensor.stephens_iphone_battery_level
+        - sensor.moto_x4_battery
+      battery_sensor_report_fields:
+      - friendly_name
+      - area
+      - device
+      - entity_id
+      battery_level: 30
+- id: '1766366663510'
+  alias: Everyone Left - Turn Off Lights
+  description: Turns off items when both Stephen and Lindsay are away from home
+  triggers:
+  - entity_id:
+    - person.stephengarden
+    - person.lindsay_garden
+    from: home
+    trigger: state
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: person.stephengarden
+      state: home
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: person.lindsay_garden
+      state: home
+  actions:
+  - target:
+      area_id:
+      - living_room
+      - dining_room
+      - family_room
+    action: light.turn_off
+    data: {}
+  - action: media_player.turn_off
+    metadata: {}
+    target:
+      entity_id:
+      - media_player.family_room_tv
+      - media_player.family_room_lgtv
+      device_id: 0351bd840216c9f2a38a2e9490dbc19e
+    data: {}
+  mode: single
+- id: '1766367336344'
+  alias: First Home - Turn On Some Lights
+  description: Turns on some room lights when the house was empty and either Stephen
+    or Lindsay arrives home
+  triggers:
+  - trigger: state
+    entity_id:
+    - person.stephengarden
+    - person.lindsay_garden
+    to: home
+  conditions:
+  - condition: template
+    value_template: '{% set who = trigger.entity_id %} {% set other = ''person.lindsay_garden''
+      if who == ''person.stephengarden'' else ''person.stephengarden'' %} {{ states(other)
+      != ''home'' }}
+
+      '
+  actions:
+  - target:
+      area_id:
+      - dining_room
+      entity_id:
+      - light.hall_lamp
+      - light.fam_rm_christmas_tree
+    action: light.turn_on
+    data: {}
+  mode: single
+- id: '1768007392996'
+  alias: NSPanel Guest Room Configuration
+  description: ''
+  use_blueprint:
+    path: Blackymas/nspanel_blueprint.yaml
+    input:
+      nspanel_name: c7d8981b519210edfaf22003812893f7
+      timezone: America/Indiana/Indianapolis (EST5EDT,M3.2.0,M11.1.0)
+      weather_entity: weather.home
+      outdoortemp: sensor.home_hvac_outdoor_temperature
+      climate: climate.guest_room
+      date_format: '%A, %-m/%-d'
+      time_format: '%-I:%M %p'
+      climate_chip_always_visible: false
+      home_indoor_temp_icon: ''
+      chip01: input_boolean.guest_staying
+      sun_entity: sun.sun
+      climate_page_button_font_size: '10'
+      utilities_enabled: false
+      entity01_icon: ''
+      indoortemp: sensor.guest_room_thermohygrometer_temperature
+      home_value01_icon: ''
+      button_page01_label: Guest Room
+      home_value01: sensor.guest_room_thermohygrometer_humidity
+      home_value03: alarm_control_panel.4216_victoria_dr_alarm_control_panel_alarm_control_panel
+      left_button_entity: input_boolean.overide_guest_room_schedule
+      left_button_name: Schedule I/O
+      right_button_entity: climate.guest_room
+      right_button_name: Climate Control
+      climate_button08_icon: ''
+      entity01_confirm: false
+      entity02: input_boolean.guest_staying
+      entity02_name: Guest Staying?
+      entity02_confirm: true
+      button_pages_icon_size: '8'
+      left_button_hold_select: Default
+      temperature_unit: °F
+- id: bank_of_dad_daily_interest
+  alias: Bank of Dad - Daily interest (from monthly rate)
+  mode: single
+  trigger:
+  - platform: time
+    at: 00:05:00
+  action:
+  - variables:
+      r_m: '{{ states(''input_number.bank_of_dad_interest_rate_monthly'')|float(0)
+        / 100 }}'
+      r_d: '{{ (1 + r_m) ** (1/30) - 1 }}'
+      ben_before: '{{ states(''input_number.ben_balance'')|float(0) }}'
+      lewis_before: '{{ states(''input_number.lewis_balance'')|float(0) }}'
+      ben_interest: '{{ (ben_before * r_d) | round(2) }}'
+      lewis_interest: '{{ (lewis_before * r_d) | round(2) }}'
+  - service: input_number.set_value
+    target:
+      entity_id: input_number.ben_balance
     data:
-      message: Battery change noted. Alert will clear once all batteries are above
-        30%.
+      value: '{{ (ben_before + ben_interest) | round(2) }}'
+  - service: input_number.set_value
+    target:
+      entity_id: input_number.lewis_balance
+    data:
+      value: '{{ (lewis_before + lewis_interest) | round(2) }}'
+  - service: input_number.set_value
+    target:
+      entity_id: input_number.ben_interest_total
+    data:
+      value: '{{ (states(''input_number.ben_interest_total'')|float(0) + ben_interest)
+        | round(2) }}'
+  - service: input_number.set_value
+    target:
+      entity_id: input_number.lewis_interest_total
+    data:
+      value: '{{ (states(''input_number.lewis_interest_total'')|float(0) + lewis_interest)
+        | round(2) }}'
+  - service: input_number.set_value
+    target:
+      entity_id: input_number.ben_interest_last
+    data:
+      value: '{{ ben_interest }}'
+  - service: input_number.set_value
+    target:
+      entity_id: input_number.lewis_interest_last
+    data:
+      value: '{{ lewis_interest }}'
+- id: '1774708171928'
+  alias: Ring Doorbell
+  description: triggers doorbell wav when doorbell binary sensor triggers
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.motion_doorbell_binarysensor
+    from:
+    - 'off'
+    - 'on'
+  conditions:
+  - condition: state
+    entity_id: timer.silence_doorbell
+    state: idle
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: person.stephengarden
+      state: home
+    - condition: state
+      entity_id: person.lindsay_garden
+      state: home
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: alarm_control_panel.4216_victoria_dr_alarm_control_panel_alarm_control_panel
+      state: armed_home
+  actions:
+  - variables:
+      speaker: media_player.kitchen_ha_voice_media_player
+      previous_volume: >
+        {{ state_attr(speaker, 'volume_level') | float(0.5) }}
+      quiet_time: >
+        {{ states('input_datetime.doorbell_quiet_time') }}
+      is_quiet_hours: >
+        {{ quiet_time != '00:00:00' and now().strftime('%H:%M:%S') >= quiet_time }}
+      target_volume: >
+        {% if is_quiet_hours %}
+          0.5
+        {% else %}
+          {{ states('input_number.doorbell_volume') | float(70) / 100 }}
+        {% endif %}
+  - action: media_player.volume_set
+    target:
+      entity_id: "{{ speaker }}"
+    data:
+      volume_level: "{{ target_volume }}"
+  - action: media_player.play_media
+    metadata: {}
+    target:
+      entity_id: "{{ speaker }}"
+    data:
+      media:
+        media_content_id: media-source://media_source/local/doorbell-1.wav
+        media_content_type: audio/x-wav
+        metadata:
+          title: doorbell-1.wav
+          thumbnail:
+          media_class: music
+          children_media_class:
+          navigateIds:
+          - {}
+          - media_content_type: app
+            media_content_id: media-source://media_source
+          browse_entity_id: media_player.kitchen_ha_voice_media_player
+      announce: true
+  - delay:
+      seconds: 5
+  - action: media_player.volume_set
+    target:
+      entity_id: "{{ speaker }}"
+    data:
+      volume_level: "{{ previous_volume }}"
+  mode: single
+
+- id: smoke_detector_monthly_trigger
+  alias: "Smoke Detector — Monthly Reminder Trigger"
+  description: "Fires on the first Saturday of each month at 8 AM to prompt smoke detector testing"
+  triggers:
+    - platform: time
+      at: "08:00:00"
+  conditions:
+    - alias: "First Saturday of month"
+      condition: template
+      value_template: "{{ now().weekday() == 5 and now().day <= 7 }}"
+  actions:
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.smoke_detector_snooze_until
+      data:
+        datetime: "1970-01-01 00:00:00"
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.smoke_detector_test_needed
+  mode: single
+
+- id: smoke_detector_notification_action
+  alias: "Smoke Detector — Handle Notification Action"
+  description: "Handles Tested / Snooze Evening / Snooze Tomorrow responses to the smoke detector test reminder"
+  triggers:
+    - platform: event
+      event_type: mobile_app_notification_action
+      event_data:
+        action: smoke_tested
+    - platform: event
+      event_type: mobile_app_notification_action
+      event_data:
+        action: smoke_snooze_evening
+    - platform: event
+      event_type: mobile_app_notification_action
+      event_data:
+        action: smoke_snooze_tomorrow
+  actions:
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'smoke_tested' }}"
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id: input_boolean.smoke_detector_test_needed
+            - action: input_datetime.set_datetime
+              target:
+                entity_id: input_datetime.smoke_detector_last_tested
+              data:
+                date: "{{ now().strftime('%Y-%m-%d') }}"
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'smoke_snooze_evening' }}"
+          sequence:
+            - action: input_datetime.set_datetime
+              target:
+                entity_id: input_datetime.smoke_detector_snooze_until
+              data:
+                datetime: "{{ now().replace(hour=19, minute=0, second=0, microsecond=0) }}"
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'smoke_snooze_tomorrow' }}"
+          sequence:
+            - action: input_datetime.set_datetime
+              target:
+                entity_id: input_datetime.smoke_detector_snooze_until
+              data:
+                datetime: "{{ (now() + timedelta(days=1)).replace(hour=8, minute=0, second=0, microsecond=0) }}"
   mode: single

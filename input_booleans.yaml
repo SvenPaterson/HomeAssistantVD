@@ -11,3 +11,13 @@ wm_critical_stephen_this_cycle:
   name: WM critical (Stephen) this cycle
 wm_critical_lindsay_this_cycle:
   name: WM critical (Lindsay) this cycle
+
+# HVAC bleach "remind when home" flag — set by notification action, cleared after reminder fires
+hvac_remind_when_home:
+  name: "HVAC Remind When Home"
+  icon: mdi:home-alert
+
+# Smoke detector monthly test reminder — turned on by automation, off when user confirms tested
+smoke_detector_test_needed:
+  name: "Smoke Detector Test Needed"
+  icon: mdi:smoke-detector-alert

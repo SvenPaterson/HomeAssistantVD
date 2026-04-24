@@ -14,7 +14,7 @@
   away_temp: 66
   cold_tolerance: 0.5
   hot_tolerance: 0.5
-  ac_mode: false
+  ac_mode: true
   precision: 1
 
 # Master Bedroom thermostat

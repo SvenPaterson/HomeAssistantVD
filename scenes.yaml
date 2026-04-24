@@ -4,26 +4,20 @@
     light.backyard_landscape: 'off'
     light.dining_room_lamp: 'off'
     light.dining_room_shelf: 'off'
-    light.living_room_floor_lamp: 'off'
-    light.living_room_reading_lamp: 'off'
-    light.living_room_table_lamp: 'off'
-    light.living_room_bookcase_lamp: 'off'
+    light.all_living_room_lights: 'off'
     light.family_room_lights: 'off'
-    light.hall_table_lamp: 'off'
+    light.hall_lamp: 'off'
+    light.basement_stair_lights: 'off'
     light.fam_rm_christmas_tree: 'off'
   icon: mdi:lightbulb-group-off-outline
 - id: '1726144246562'
   name: Important Announcement Volume
   entities:
-    media_player.kitchen_ha_voice_media_player:
+    media_player.home_assistant_voice_0a1a5a_media_player:
       state: 'on'
       attributes:
         volume_level: 1
       is_volume_muted: false
-    media_player.family_speaker:
-      state: 'on'
-      attributes:
-        volume_level: 1
     media_player.basement_tv:
       state: 'on'
       attributes:
@@ -37,13 +31,17 @@
 - id: '1726121346563'
   name: Return to Normal Volume
   entities:
-    media_player.kitchen_ha_voice_media_player:
+    media_player.home_assistant_voice_0a1a5a_media_player:
       state: 'on'
       attributes:
         volume_level: 0.3
       is_volume_muted: false
-    media_player.family_speaker:
-      state: 'on'
+    media_player.basement_tv:
+      state: 'off'
+      attributes:
+        volume_level: 0.3
+    media_player.family_room_tv:
+      state: 'off'
       attributes:
         volume_level: 0.3
   icon: mdi:volume-medium

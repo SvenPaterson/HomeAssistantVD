@@ -28,6 +28,16 @@
       unit_of_measurement: "s"
       icon: mdi:timer
 
+    - name: "Power Meter Mains Total Watts"
+      unique_id: power_meter_mains_total_watts
+      state: >
+        {{ (states('sensor.power_meter_mains_l1_watts') | float(0))
+           + (states('sensor.power_meter_mains_l2_watts') | float(0)) }}
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:flash
+
     - name: HACS Pending Updates
       state: >
         {{ states.update
@@ -35,6 +45,104 @@
             | selectattr('state','eq','on')
             | list | count }}
 
+    - name: "Rain Next 3 Days In"
+      unique_id: rain_next_3_days_in
+      unit_of_measurement: "in"
+      state: >
+        {{ (
+          states('sensor.pirateweather_precip_accumulation_1d')|float(0) +
+          states('sensor.pirateweather_precip_accumulation_2d')|float(0) +
+          states('sensor.pirateweather_precip_accumulation_3d')|float(0)
+        ) | round(2) }}
+
+    # E. Track historical daily max temperatures using modern template sensors
+    - unique_id: tpl_yesterday_max_temp
+      name: "Yesterday Max Temp"
+      unit_of_measurement: "°F"
+      state: "{{ states('input_number.yesterday_max_temp') | float(0) }}"
+
+    - unique_id: tpl_day_before_yesterday_max_temp
+      name: "Day Before Yesterday Max Temp"
+      unit_of_measurement: "°F"
+      state: "{{ states('input_number.day_before_yesterday_max_temp') | float(0) }}"
+
+    - unique_id: tpl_three_days_ago_max_temp
+      name: "Three Days Ago Max Temp"
+      unit_of_measurement: "°F"
+      state: "{{ states('input_number.three_days_ago_max_temp') | float(0) }}"
+
+    - unique_id: tpl_hot_streak_last_3_days
+      name: "Hot Streak Last 3 Days"
+      state: >
+        {{
+          states('sensor.yesterday_max_temp')|float(0) >= 80 and
+          states('sensor.day_before_yesterday_max_temp')|float(0) >= 80 and
+          states('sensor.three_days_ago_max_temp')|float(0) >= 80
+        }}
+
+    # bank of dad helpers for projecting amounts into future
+    - name: "Ben Balance in 12 Months"
+      unique_id: ben_balance_in_12_months
+      state: >
+        {% set bal = states('input_number.ben_balance')|float(0) %}
+        {% set r_m_raw = states('input_number.bank_of_dad_interest_rate_monthly')|float(0) %}
+        {% set r_m = r_m_raw / 100 %}
+        $ {{ '%.2f'|format(bal * ((1 + r_m) ** 12)) }}
+
+    - name: "Lewis Balance in 12 Months"
+      unique_id: lewis_balance_in_12_months
+      state: >
+        {% set bal = states('input_number.lewis_balance')|float(0) %}
+        {% set r_m_raw = states('input_number.bank_of_dad_interest_rate_monthly')|float(0) %}
+        {% set r_m = r_m_raw / 100 %}
+        $ {{ '%.2f'|format(bal * ((1 + r_m) ** 12)) }}
+
+    - name: "Ben Magic Money Percent"
+      unique_id: ben_magic_money_percent
+      unit_of_measurement: "%"
+      state: >
+        {% set bal = states('input_number.ben_balance')|float(0) %}
+        {% set magic = states('input_number.ben_interest_total')|float(0) %}
+        {% if bal <= 0 %}0{% else %}{{ (100 * magic / bal) | round(1) }}{% endif %}
+
+    - name: "Lewis Magic Money Percent"
+      unique_id: lewis_magic_money_percent
+      unit_of_measurement: "%"
+      state: >
+        {% set bal = states('input_number.lewis_balance')|float(0) %}
+        {% set magic = states('input_number.lewis_interest_total')|float(0) %}
+        {% if bal <= 0 %}0{% else %}{{ (100 * magic / bal) | round(1) }}{% endif %}
+
+        # read only display sensors for dashboard view
+    - name: "Ben Balance (Display)"
+      unique_id: ben_balance_display
+      state: >
+        $ {{ '%.2f'|format(states('input_number.ben_balance')|float(0)) }}
+
+    - name: "Lewis Balance (Display)"
+      unique_id: lewis_balance_display
+      state: >
+        $ {{ '%.2f'|format(states('input_number.lewis_balance')|float(0)) }}
+
+    - name: "Ben Magic Money Total (Display)"
+      unique_id: ben_magic_money_total_display
+      state: >
+        $ {{ '%.2f'|format(states('input_number.ben_interest_total')|float(0)) }}
+
+    - name: "Lewis Magic Money Total (Display)"
+      unique_id: lewis_magic_money_total_display
+      state: >
+        $ {{ '%.2f'|format(states('input_number.lewis_interest_total')|float(0)) }}
+
+    - name: "Ben Magic Money Today (Display)"
+      unique_id: ben_magic_money_today_display
+      state: >
+        $ {{ '%.2f'|format(states('input_number.ben_interest_last')|float(0)) }}
+
+    - name: "Lewis Magic Money Today (Display)"
+      unique_id: lewis_magic_money_today_display
+      state: >
+        $ {{ '%.2f'|format(states('input_number.lewis_interest_last')|float(0)) }}
 
 - binary_sensor:
     # For Govee bluetooth thermohygrometer battery level alert
@@ -70,18 +178,22 @@
       device_class: battery
       icon: mdi:battery
 
-    ### IRRIGATION ALERT ###
-    # 1. Current-day "hot" flag
-    - name: "Hot Day 24h Max 80F"
-      unique_id: hot_day_24h_max_80f
-      state: "{{ states('sensor.outdoor_temp_max_24h')|float(0) >= 80 }}"
-      device_class: heat
+    ### SUMP PUMP LONG RUN ALERT ###
+    - name: "Sump Pump Running Too Long"
+      unique_id: sump_pump_running_too_long
+      state: >
+        {{ is_state('binary_sensor.sump_pump_active', 'on') and
+           (now() - states.binary_sensor.sump_pump_active.last_changed).total_seconds() > 120 }}
+      delay_on:
+        seconds: 120
+      icon: mdi:pump
 
+    ### IRRIGATION ALERT ###
     # 2. 7-day rain deficit (< 0.5 in)
     - name: "Weekly Rain Below Target"
       unique_id: bs_weekly_rain_deficit
       state: >
-        {% set v = states('sensor.rain_in_past_7_days_in') %}
+        {% set v = states('sensor.rain_past_7_days_in') %}
         {{ v not in ['unknown','unavailable','none'] and v|float < 0.5 }}
       icon: mdi:weather-rainy
 
@@ -172,31 +284,31 @@
             0
           {% endif %}
 
+    ### SMOKE DETECTOR TEST REMINDER ###
+    - name: "Smoke Detector Test Due"
+      unique_id: smoke_detector_test_due
+      state: >
+        {{ is_state('input_boolean.smoke_detector_test_needed', 'on') and
+           (states('input_datetime.smoke_detector_snooze_until') in ['unknown', 'unavailable'] or
+            now() >= states('input_datetime.smoke_detector_snooze_until') | as_datetime | as_local) }}
+      icon: mdi:smoke-detector-alert
+    ### END SMOKE DETECTOR ###
+
     - name: "HVAC Bleach Reminder Due"
       unique_id: hvac_bleach_reminder_due
       state: >
         {% set last_bleached = states('input_datetime.hvac_last_bleached') | as_datetime | as_local %}
         {% set days_since = (now().date() - last_bleached.date()).days %}
-        {% set is_saturday = now().weekday() == 5 %}
         {% set snooze_time = states('input_datetime.hvac_snooze_bleach_alert_until') %}
 
-        {# Snooze logic unchanged #}
         {% set snooze_active = false %}
         {% if snooze_time not in ['unknown', 'unavailable', ''] %}
-          {% set snooze_dt = snooze_time | as_datetime | as_local %}
-          {% set snooze_active = now() < snooze_dt %}
+          {% set snooze_active = now() < (snooze_time | as_datetime | as_local) %}
         {% endif %}
 
-        {% set snooze_due = false %}
-        {% if snooze_time not in ['unknown', 'unavailable', ''] %}
-          {% set snooze_dt = snooze_time | as_datetime | as_local %}
-          {% set snooze_due = now() >= snooze_dt and snooze_dt.year > 1970 %}
-        {% endif %}
-
-        {# Test override #}
         {% set test_mode = is_state('input_boolean.hvac_bleach_test', 'on') %}
 
-        {{ ((days_since >= 28 and is_saturday and now().hour >= 8 and not snooze_active) or snooze_due) or test_mode }}
+        {{ (days_since >= 28 and now().hour >= 8 and not snooze_active) or test_mode }}
 
       icon: >
         {% if is_state(this.entity_id, 'on') %}

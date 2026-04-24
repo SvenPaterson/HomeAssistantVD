@@ -10,7 +10,7 @@ alert: !include alerts.yaml
 input_boolean: !include input_booleans.yaml
 input_number: !include input_numbers.yaml
 notify: !include notify.yaml
-input_datetime: !include  input_datetime.yaml
+input_datetime: !include input_datetime.yaml
 
 # Loads default set of integrations. Do not remove.
 default_config:
@@ -33,14 +33,15 @@ history:
 homekit:
   filter:
     include_entities:
-      - switch.amcrest_camera_privacy_mode  # Exposes camera privacy mode to Apple HomeKit
+      - switch.amcrest_camera_privacy_mode # Exposes camera privacy mode to Apple HomeKit
 
 influxdb:
-  host: 192.168.1.100
-  port: 8086
-  database: homeassistant
-  username: stephengarden
-  password: !secret influxdb_pw
+#  commented out keys will be obsolete as of 2026.9
+#  host: 192.168.1.100
+#  port: 8086
+#  database: homeassistant
+#  username: stephengarden
+#  password: !secret influxdb_pw
   max_retries: 3
   default_measurement: state
   include:
@@ -49,6 +50,8 @@ influxdb:
       - sensor.openweathermap*
       - sensor.fr_if03re000362_radon*
       - input_number.sump_pump*
+      - sensor.home_hvac_outdoor_temperature
+      - sensor.basement_thermohygrometer_temperature
 
 conversation:
   intents:
@@ -61,7 +64,7 @@ amcrest:
   - host: 192.168.1.72
     username: admin
     password: M4rbj9fHhd
-    name: Amcrest Camera  # Added name to ensure consistent entity IDs
+    name: Amcrest Camera # Added name to ensure consistent entity IDs
     switches:
       - privacy_mode
 
@@ -74,8 +77,38 @@ timer:
   lewis_screentime:
     name: "Lewis's Screen Time Timer"
     icon: mdi:tablet
+  silence_doorbell:
+    name: "Silence Doorbell"
+    icon: mdi:bell-off
 
 input_button:
   hvac_bleached_today:
     name: "HVAC Bleached Today"
     icon: mdi:pipe-wrench
+
+wake_on_lan:
+
+intent_script:
+  VacuumKitchen:
+    action:
+      - service: google_assistant_sdk.send_text_command
+        data:
+          command: "Talk to SharClean Pro"
+      - delay: "00:00:02"
+      - service: google_assistant_sdk.send_text_command
+        data:
+          command: "Start my robot"  
+          #Ask SharkClean Pro to start Spic n Span Dan
+    speech:
+      text: "Okay, starting the kitchen vacuum."
+  StopKitchenVacuum:
+    action:
+      - service: google_assistant_sdk.send_text_command
+        data:
+          command: "Talk to SharkClean Pro"
+      - delay: "00:00:02"
+      - service: google_assistant_sdk.send_text_command
+        data:
+          command: "Send my robot to the base"
+    speech:
+      text: "Okay, stopping Spic n Span Dan."

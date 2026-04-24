@@ -24,48 +24,9 @@
   max_age:
     hours: 24
 
-# D. Sum of next‑3‑day forecast accumulation
-- platform: template
-  sensors:
-    rain_next_3_days_in:
-      friendly_name: "Rain Next 3 Days In"
-      unit_of_measurement: "in"
-      value_template: >
-        {{ (
-          states('sensor.pirateweather_precip_accumulation_1d')|float(0) +
-          states('sensor.pirateweather_precip_accumulation_2d')|float(0) +
-          states('sensor.pirateweather_precip_accumulation_3d')|float(0)
-        ) | round(2) }}
-
-# E. Track historical daily max temperatures using template sensors
-- platform: template
-  sensors:
-    yesterday_max_temp:
-      friendly_name: "Yesterday Max Temp"
-      unique_id: tpl_yesterday_max_temp
-      unit_of_measurement: "°F"
-      value_template: "{{ states('input_number.yesterday_max_temp')|float(0) }}"
-    
-    day_before_yesterday_max_temp:
-      friendly_name: "Day Before Yesterday Max Temp"
-      unique_id: tpl_day_before_yesterday_max_temp
-      unit_of_measurement: "°F"
-      value_template: >
-        {{ states('input_number.day_before_yesterday_max_temp')|float(0) }}
-    
-    three_days_ago_max_temp:
-      friendly_name: "Three Days Ago Max Temp"
-      unique_id: tpl_three_days_ago_max_temp
-      unit_of_measurement: "°F"
-      value_template: >
-        {{ states('input_number.three_days_ago_max_temp')|float(0) }}
-
-    hot_streak_last_3_days:
-      friendly_name: "Hot Streak Last 3 Days"
-      unique_id: tpl_hot_streak_last_3_days
-      value_template: >
-        {{
-          states('sensor.yesterday_max_temp')|float(0) >= 80 and
-          states('sensor.day_before_yesterday_max_temp')|float(0) >= 80 and
-          states('sensor.three_days_ago_max_temp')|float(0) >= 80
-        }}
+# Get the current WAN IP address every 5mins
+- platform: rest
+  name: External IP
+  resource: "https://api.ipify.org/?format=json"
+  value_template: "{{ value_json.ip }}"
+  scan_interval: 300
