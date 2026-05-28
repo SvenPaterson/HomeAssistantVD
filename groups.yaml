@@ -11,7 +11,6 @@ someone_home:
   entities:
     - person.lindsay_garden
     - person.stephengarden
-    - person.guest
 
 all_speakers:
   name: All Speakers

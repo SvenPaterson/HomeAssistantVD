@@ -213,89 +213,6 @@
         data:
           message: Washing machine is finished!
   mode: single
-- id: '1674418857081'
-  alias: Home Status Logic
-  description: Logic to determine current status of home based on occupancy and alarm
-  trigger:
-  - platform: state
-    entity_id:
-    - person.stephengarden
-    to: Home
-    id: SUM1_HOME
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 3
-  - platform: state
-    entity_id: person.stephengarden
-    to: AWAY
-    id: ALL_GONE
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 3
-  condition: []
-  action:
-  - choose:
-    - conditions:
-      - condition: trigger
-        id: SUM1_HOME
-      sequence:
-      - service: input_select.select_option
-        data:
-          option: Home
-        target:
-          entity_id: input_select.house_status
-    - conditions:
-      - condition: trigger
-        id: ALL_GONE
-      sequence:
-      - service: input_select.select_option
-        data:
-          option: Away
-        target:
-          entity_id: input_select.house_status
-  mode: single
-- id: '1674420171955'
-  alias: Home Status Actions
-  description: What happens when we all come and go from the house
-  trigger:
-  - platform: state
-    entity_id:
-    - input_select.house_status
-    to: Away
-    id: ALL_AWAY
-  - platform: state
-    entity_id:
-    - input_select.house_status
-    to: Home
-    id: ALL_HOME
-  condition: []
-  action:
-  - choose:
-    - conditions:
-      - condition: trigger
-        id: ALL_AWAY
-      sequence:
-      - service: climate.set_preset_mode
-        data:
-          preset_mode: away
-        target:
-          entity_id:
-          - climate.master_bedroom_heater
-          - climate.guest_room
-    - conditions:
-      - condition: trigger
-        id: ALL_HOME
-      sequence:
-      - service: climate.set_preset_mode
-        data:
-          preset_mode: none
-        target:
-          entity_id:
-          - climate.master_bedroom_heater
-          - climate.guest_room
-  mode: single
 - id: '1674421594354'
   alias: 'DEBUG: Test Lab'
   description: ''
@@ -432,38 +349,38 @@
           entity_id: input_boolean.water_heater_boost_mode_helper
         action: input_boolean.turn_off
   mode: single
-- id: '1674520573129'
-  alias: Guest Location Tracker
-  description: sets the guest users location to home if toggled on and vice versa
-  trigger:
-  - platform: state
-    entity_id: input_boolean.guest_staying
-    from: 'off'
-    to: 'on'
-    id: guest-here
-  - platform: state
-    entity_id: input_boolean.guest_staying
-    from: 'on'
-    to: 'off'
-    id: guest-gone
-  action:
+- id: '1746000000001'
+  alias: Guest Stay Dates - Auto Toggle
+  description: >
+    Runs hourly. Turns guest_staying on if today is on or after arrival and before
+    departure, off otherwise. Self-healing if dates are set retroactively or HA was down.
+  triggers:
+  - trigger: time_pattern
+    minutes: '0'
+  - trigger: state
+    entity_id:
+      - input_datetime.guest_arrival
+      - input_datetime.guest_departure
+  conditions:
+  - condition: template
+    value_template: >
+      {{ states('input_datetime.guest_arrival') not in ['unknown', 'unavailable'] and
+         states('input_datetime.guest_departure') not in ['unknown', 'unavailable'] }}
+  actions:
   - choose:
     - conditions:
-      - condition: trigger
-        id: guest-here
+      - condition: template
+        value_template: >
+          {{ now().strftime('%Y-%m-%d') >= states('input_datetime.guest_arrival')
+             and now().strftime('%Y-%m-%d') < states('input_datetime.guest_departure') }}
       sequence:
-      - service: device_tracker.see
-        data:
-          dev_id: guest
-          location_name: Home
-    - conditions:
-      - condition: trigger
-        id: guest-gone
-      sequence:
-      - service: device_tracker.see
-        data:
-          dev_id: guest
-          location_name: not_home
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.guest_staying
+    default:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.guest_staying
   mode: single
 - id: '1674571299634'
   alias: 'MASTER BEDROOM: Heater Schedule'
@@ -1811,8 +1728,8 @@
       - entity_id
       battery_level: 30
 - id: '1766366663510'
-  alias: Everyone Left - Turn Off Lights
-  description: Turns off items when both Stephen and Lindsay are away from home
+  alias: Presence Actions - Everyone Left
+  description: Actions when both Stephen and Lindsay leave the house
   triggers:
   - entity_id:
     - person.stephengarden
@@ -1846,11 +1763,16 @@
       - media_player.family_room_lgtv
       device_id: 0351bd840216c9f2a38a2e9490dbc19e
     data: {}
+  - action: climate.set_preset_mode
+    data:
+      preset_mode: away
+    target:
+      entity_id:
+      - climate.master_bedroom_heater
   mode: single
 - id: '1766367336344'
-  alias: First Home - Turn On Some Lights
-  description: Turns on some room lights when the house was empty and either Stephen
-    or Lindsay arrives home
+  alias: Presence Actions - First Home
+  description: Actions when the first person arrives home to an empty house
   triggers:
   - trigger: state
     entity_id:
@@ -1873,6 +1795,12 @@
       - light.fam_rm_christmas_tree
     action: light.turn_on
     data: {}
+  - action: climate.set_preset_mode
+    data:
+      preset_mode: none
+    target:
+      entity_id:
+      - climate.master_bedroom_heater
   mode: single
 - id: '1768007392996'
   alias: NSPanel Guest Room Configuration
@@ -2102,4 +2030,75 @@
                 entity_id: input_datetime.smoke_detector_snooze_until
               data:
                 datetime: "{{ (now() + timedelta(days=1)).replace(hour=8, minute=0, second=0, microsecond=0) }}"
+  mode: single
+
+- id: dishwasher_filter_clean_check
+  alias: "Dishwasher — Flag Filter Clean Needed After Cycle"
+  trigger:
+    - platform: state
+      entity_id: sensor.dishwasher_operation_state
+      to: "Finished"
+  condition:
+    - condition: template
+      value_template: >
+        {% set last = states('input_datetime.dishwasher_last_filter_clean') | as_datetime | as_local %}
+        {% set days_since = (now().date() - last.date()).days %}
+        {% set snooze = states('input_datetime.dishwasher_filter_clean_snooze_until') %}
+        {% set snooze_active = false %}
+        {% if snooze not in ['unknown', 'unavailable', ''] %}
+          {% set snooze_active = now() < (snooze | as_datetime | as_local) %}
+        {% endif %}
+        {{ days_since >= 30 and not snooze_active }}
+    - condition: state
+      entity_id: input_boolean.dishwasher_filter_clean_needed
+      state: 'off'
+  action:
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.dishwasher_filter_clean_needed
+  mode: single
+
+- id: dishwasher_filter_clean_actions
+  alias: "Dishwasher — Filter Clean Notification Actions"
+  trigger:
+    - platform: event
+      event_type: mobile_app_notification_action
+      event_data:
+        action: dishwasher_filter_cleaned
+    - platform: event
+      event_type: mobile_app_notification_action
+      event_data:
+        action: dishwasher_filter_snooze
+  action:
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'dishwasher_filter_cleaned' }}"
+          sequence:
+            - action: input_datetime.set_datetime
+              target:
+                entity_id: input_datetime.dishwasher_last_filter_clean
+              data:
+                date: "{{ now().strftime('%Y-%m-%d') }}"
+            - action: input_datetime.set_datetime
+              target:
+                entity_id: input_datetime.dishwasher_filter_clean_snooze_until
+              data:
+                datetime: "1970-01-01 00:00:00"
+            - action: input_boolean.turn_off
+              target:
+                entity_id: input_boolean.dishwasher_filter_clean_needed
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'dishwasher_filter_snooze' }}"
+          sequence:
+            - action: input_datetime.set_datetime
+              target:
+                entity_id: input_datetime.dishwasher_filter_clean_snooze_until
+              data:
+                datetime: >
+                  {{ (now().date() + timedelta(days=1)).strftime('%Y-%m-%d') }} 08:00:00
+            - action: input_boolean.turn_off
+              target:
+                entity_id: input_boolean.dishwasher_filter_clean_needed
   mode: single

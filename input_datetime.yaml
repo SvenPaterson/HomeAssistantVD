@@ -23,3 +23,25 @@ smoke_detector_last_tested:
   name: "Smoke Detector Last Tested"
   has_date: true
   has_time: false
+
+dishwasher_last_filter_clean:
+  name: "Dishwasher Last Filter Clean"
+  has_date: true
+  has_time: false
+
+dishwasher_filter_clean_snooze_until:
+  name: "Dishwasher Filter Clean Snooze Until"
+  has_date: true
+  has_time: true
+
+guest_arrival:
+  name: "Guest Arrival"
+  has_date: true
+  has_time: false
+  icon: mdi:account-arrow-right
+
+guest_departure:
+  name: "Guest Departure"
+  has_date: true
+  has_time: false
+  icon: mdi:account-arrow-left

@@ -21,3 +21,8 @@ hvac_remind_when_home:
 smoke_detector_test_needed:
   name: "Smoke Detector Test Needed"
   icon: mdi:smoke-detector-alert
+
+# Dishwasher filter clean monthly reminder — set by automation when 30 days pass + cycle finishes
+dishwasher_filter_clean_needed:
+  name: "Dishwasher Filter Clean Needed"
+  icon: mdi:dishwasher-alert

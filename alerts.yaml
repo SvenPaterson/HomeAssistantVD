@@ -123,6 +123,53 @@ sump_pump_long_run:
         critical: 1
         volume: 1.0
 
+dishwasher_filter_clean:
+  name: "Dishwasher Filter Clean Reminder"
+  title: "🍽️ Clean Dishwasher Filter"
+  message: "It's been a month — time to clean the dishwasher filter and run a machine-clean cycle."
+  done_message: clear_notification
+  entity_id: input_boolean.dishwasher_filter_clean_needed
+  state: 'on'
+  repeat:
+    - 480   # 8 hours
+    - 1440  # then daily
+  can_acknowledge: false
+  skip_first: false
+  notifiers:
+    - parents_phones
+  data:
+    tag: "dishwasher-filter-clean"
+    group: "kitchen-maintenance"
+    actions:
+      - action: "dishwasher_filter_cleaned"
+        title: "✅ Done!"
+        icon: "sfsymbols:checkmark.circle.fill"
+      - action: "dishwasher_filter_snooze"
+        title: "⏰ Remind Me Tomorrow"
+        icon: "sfsymbols:calendar"
+
+dishwasher_rinse_aid_empty:
+  name: "Dishwasher Rinse Aid Empty"
+  title: "🍋 Refill Dishwasher Rinse Aid"
+  message: "The dishwasher rinse aid is empty — please refill it before the next cycle."
+  done_message: clear_notification
+  entity_id: sensor.dishwasher_rinse_aid
+  state: 'empty'
+  repeat:
+    - 480   # 8 hours
+    - 1440  # then daily
+  can_acknowledge: true
+  skip_first: false
+  notifiers:
+    - parents_phones
+  data:
+    tag: "dishwasher-rinse-aid"
+    group: "kitchen-maintenance"
+    actions:
+      - action: "rinse_aid_refilled"
+        title: "✅ Refilled!"
+        icon: "sfsymbols:checkmark.circle.fill"
+
 hvac_bleach_reminder:
   name: "HVAC Condensate Line Needs Bleaching"
   message: "Time to bleach the HVAC condensate line! It's been 4+ weeks since last maintenance."
